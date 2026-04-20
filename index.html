@@ -108,13 +108,13 @@
         // --- Problem Generators ---
         const generateIntegers = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 19) - 9;
-                let b = Math.floor(Math.random() * 19) - 9;
+                let a = Math.floor(Math.random() * 31) - 15;
+                let b = Math.floor(Math.random() * 31) - 15;
                 let op = Math.random() > 0.5 ? '+' : '-';
                 return { q: `${a} ${op} ${b < 0 ? `(${b})` : b}`, a: `${op === '+' ? a + b : a - b}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 19) - 9;
-                let b = Math.floor(Math.random() * 19) - 9;
+                let a = Math.floor(Math.random() * 25) - 12;
+                let b = Math.floor(Math.random() * 25) - 12;
                 if (b === 0) b = 1;
                 let op = Math.random() > 0.5 ? '\\times' : '\\div';
                 let ans;
@@ -122,58 +122,66 @@
                 else { ans = a; a = a * b; }
                 return { q: `${a} ${op} ${b < 0 ? `(${b})` : b}`, a: `${ans}` };
             } else {
-                let a = Math.floor(Math.random() * 19) - 9;
-                let b = Math.floor(Math.random() * 9) - 4; if (b===0) b=2;
-                let c = Math.floor(Math.random() * 9) - 4; if (c===0) c=3;
+                let a = Math.floor(Math.random() * 31) - 15;
+                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=2;
+                let c = Math.floor(Math.random() * 15) - 7; if (c===0) c=3;
                 return { q: `${a} - ${b < 0 ? `(${b})` : b} \\times ${c < 0 ? `(${c})` : c}`, a: `${a - b * c}` };
             }
         };
 
         const generateAlgebraic = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 9) - 4; if(a===0) a=1;
-                let b = Math.floor(Math.random() * 9) - 4; if(b===0) b=2;
+                let a = Math.floor(Math.random() * 15) - 7; if(a===0) a=1;
+                let b = Math.floor(Math.random() * 15) - 7; if(b===0) b=2;
                 return { q: `${formatTerm(a, 'x', true)} ${formatTerm(b, 'x', false)}`, a: `${formatTerm(a+b, 'x', true) || '0'}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 5) + 2;
-                let b = Math.floor(Math.random() * 5) + 1;
-                let c = Math.floor(Math.random() * 5) + 1;
-                let d = Math.floor(Math.random() * 5) + 2;
-                return { q: `${a}(x - ${b}) - ${c}(x - ${d})`, a: `${formatTerm(a-c, 'x', true)} ${formatTerm(-a*b + c*d, '', false)}` || '0' };
+                let a = Math.floor(Math.random() * 9) - 4; if(a===0) a=3;
+                let b = Math.floor(Math.random() * 15) - 7;
+                let c = Math.floor(Math.random() * 9) - 4; if(c===0) c=2;
+                let d = Math.floor(Math.random() * 15) - 7;
+                let qLeft = a === 1 ? `(x ${formatTerm(-b, '', false)})` : a === -1 ? `-(x ${formatTerm(-b, '', false)})` : `${a}(x ${formatTerm(-b, '', false)})`;
+                return { q: `${qLeft} ${formatTerm(-c, '(x ' + formatTerm(-d, '', false) + ')', false)}`, a: `${formatTerm(a-c, 'x', true)} ${formatTerm(-a*b + c*d, '', false)}` || '0' };
             } else {
-                let a = Math.floor(Math.random() * 4) + 1;
-                let b = Math.floor(Math.random() * 5) + 1;
-                let d = Math.floor(Math.random() * 4) + 1;
-                let e = Math.floor(Math.random() * 5) + 1;
-                let ansX = a * 3 - d * 2;
-                let ansC = -b * 3 - (-e) * 2;
+                let a = Math.floor(Math.random() * 7) + 1;
+                let b = Math.floor(Math.random() * 11) - 5;
+                let d = Math.floor(Math.random() * 7) + 1;
+                let e = Math.floor(Math.random() * 11) - 5;
+                let denom1 = Math.floor(Math.random() * 3) + 2; // 2,3,4
+                let denom2 = Math.floor(Math.random() * 4) + 3; // 3,4,5,6
+                if (denom1 === denom2) denom2++;
+                let lcm = (denom1 * denom2) / gcd(denom1, denom2);
+                let m1 = lcm / denom1;
+                let m2 = lcm / denom2;
+                let ansX = a * m1 - d * m2;
+                let ansC = -b * m1 - (-e) * m2;
                 return { 
-                    q: `\\frac{${formatTerm(a,'x',true)} - ${b}}{2} - \\frac{${formatTerm(d,'x',true)} - ${e}}{3}`, 
-                    a: `\\frac{${formatTerm(ansX,'x',true)} ${formatTerm(ansC,'',false)}}{6}`
+                    q: `\\frac{${formatTerm(a,'x',true)} ${formatTerm(-b,'',false)}}{${denom1}} - \\frac{${formatTerm(d,'x',true)} ${formatTerm(-e,'',false)}}{${denom2}}`, 
+                    a: `\\frac{${formatTerm(ansX,'x',true)} ${formatTerm(ansC,'',false)}}{${lcm}}`
                 };
             }
         };
 
         const generateLinearEquations = (diff) => {
             if (diff === 'easy') {
-                let x = Math.floor(Math.random() * 19) - 9;
-                let a = Math.floor(Math.random() * 19) - 9;
+                let x = Math.floor(Math.random() * 25) - 12;
+                let a = Math.floor(Math.random() * 25) - 12;
                 let b = x + a;
                 if (Math.random() > 0.5) return { q: `x ${formatTerm(a, '', false)} = ${b}`, a: `x = ${x}` };
-                let c = Math.floor(Math.random() * 9) - 4; if (c===0) c=2;
+                let c = Math.floor(Math.random() * 15) - 7; if (c===0) c=2;
                 return { q: `${c}x = ${c * x}`, a: `x = ${x}` };
             } else if (diff === 'normal') {
-                let x = Math.floor(Math.random() * 19) - 9;
-                let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=2;
-                let c = Math.floor(Math.random() * 9) - 4; if (c===a) c=a-1;
-                let b = Math.floor(Math.random() * 19) - 9;
+                let x = Math.floor(Math.random() * 21) - 10;
+                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=2;
+                let c = Math.floor(Math.random() * 15) - 7; if (c===a) c=a-1;
+                let b = Math.floor(Math.random() * 21) - 10;
                 let d = a * x + b - c * x;
                 return { q: `${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} = ${formatTerm(c,'x',true)} ${formatTerm(d,'',false)}`, a: `x = ${x}` };
             } else {
-                let x = Math.floor(Math.random() * 11) - 5;
-                let a = Math.floor(Math.random() * 5) + 2;
-                let b = Math.floor(Math.random() * 9) - 4;
-                let c = Math.floor(Math.random() * 5) + 1;
+                let x = Math.floor(Math.random() * 15) - 7;
+                let a = Math.floor(Math.random() * 7) + 2; if(Math.random() > 0.5) a = -a;
+                let b = Math.floor(Math.random() * 15) - 7;
+                let c = Math.floor(Math.random() * 7) + 1; if(Math.random() > 0.5) c = -c;
+                if (a === c) c--;
                 let d = a * (x + b) - c * x;
                 return { q: `${a}(x ${formatTerm(b,'',false)}) = ${formatTerm(c,'x',true)} ${formatTerm(d,'',false)}`, a: `x = ${x}` };
             }
@@ -181,22 +189,22 @@
 
         const generateProportions = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=3;
-                let x = Math.floor(Math.random() * 5) + 2;
+                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=3;
+                let x = Math.floor(Math.random() * 9) + 2; if(Math.random() > 0.5) x = -x;
                 return { q: `yはxに比例し、x=${x}のときy=${a*x}である。yをxの式で表しなさい。`, a: `y = ${formatTerm(a,'x',true)}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 8) + 2;
-                let x = Math.floor(Math.random() * 6) + 2;
+                let a = Math.floor(Math.random() * 13) + 2;
+                let x = Math.floor(Math.random() * 11) + 2;
                 if (Math.random() > 0.5) {
                     return { q: `yはxに反比例し、x=${x}のときy=${a}である。yをxの式で表しなさい。`, a: `y = \\frac{${a*x}}{x}` };
                 } else {
                     return { q: `yはxに反比例し、x=${x}のときy=${-a}である。yをxの式で表しなさい。`, a: `y = -\\frac{${a*x}}{x}` };
                 }
             } else {
-                let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=5;
-                let x = Math.floor(Math.random() * 3) + 2;
+                let a = Math.floor(Math.random() * 13) - 6; if (a===0) a=5;
+                let x = Math.floor(Math.random() * 5) + 2;
                 let y = a * x;
-                let q_x = Math.floor(Math.random() * 5) - 6; if (q_x===0) q_x=-3;
+                let q_x = Math.floor(Math.random() * 9) - 10; if (q_x===0) q_x=-3;
                 return { q: `yはxに比例し、x=${x}のときy=${y}である。x=${q_x}のときのyの値を求めなさい。`, a: `y = ${a * q_x}` };
             }
         };
@@ -206,125 +214,163 @@
             const type = types[Math.floor(Math.random() * types.length)];
             
             if (type === 'median_odd') {
-                let d = Array.from({length: 5}, () => Math.floor(Math.random() * 30) + 1);
+                let l = Math.floor(Math.random() * 3) * 2 + 5; // 5, 7, 9
+                let d = Array.from({length: l}, () => Math.floor(Math.random() * 50) + 1);
                 let sorted = [...d].sort((a,b) => a-b);
-                return { q: `次のデータの中央値(メジアン)を求めなさい。 ${d.join(', ')}`, a: `${sorted[2]}` };
+                return { q: `次のデータの中央値(メジアン)を求めなさい。 ${d.join(', ')}`, a: `${sorted[Math.floor(l/2)]}` };
             } else if (type === 'median_even') {
-                let d = Array.from({length: 6}, () => Math.floor(Math.random() * 30) + 1);
+                let l = Math.floor(Math.random() * 3) * 2 + 6; // 6, 8, 10
+                let d = Array.from({length: l}, () => Math.floor(Math.random() * 50) + 1);
                 let sorted = [...d].sort((a,b) => a-b);
-                return { q: `次のデータの中央値を求めなさい。 ${d.join(', ')}`, a: `${(sorted[2] + sorted[3]) / 2}` };
+                return { q: `次のデータの中央値を求めなさい。 ${d.join(', ')}`, a: `${(sorted[l/2 - 1] + sorted[l/2]) / 2}` };
             } else if (type === 'range') {
-                let d = Array.from({length: 5}, () => Math.floor(Math.random() * 40) + 1);
+                let l = Math.floor(Math.random() * 5) + 5; // 5 to 9
+                let d = Array.from({length: l}, () => Math.floor(Math.random() * 100) + 1);
                 return { q: `次のデータの範囲(レンジ)を求めなさい。 ${d.join(', ')}`, a: `${Math.max(...d) - Math.min(...d)}` };
             } else if (type === 'mean') {
-                const mean = Math.floor(Math.random() * 10) + 5;
+                let l = Math.floor(Math.random() * 4) + 4; // 4 to 7
+                const mean = Math.floor(Math.random() * 20) + 10;
                 let sum = 0;
                 let d = [];
-                for (let i=0; i<4; i++) {
-                    let n = mean + Math.floor(Math.random() * 9) - 4;
+                for (let i=0; i<l-1; i++) {
+                    let n = mean + Math.floor(Math.random() * 15) - 7;
                     if (n < 1) n = 1;
                     d.push(n);
                     sum += n;
                 }
-                d.push(mean * 5 - sum);
+                d.push(mean * l - sum);
                 d.sort(() => Math.random() - 0.5);
                 return { q: `次のデータの平均値を求めなさい。 ${d.join(', ')}`, a: `${mean}` };
             } else if (type === 'mean_reverse') {
-                const mean = Math.floor(Math.random() * 10) + 10;
+                let l = Math.floor(Math.random() * 3) + 4; // 4 to 6
+                const mean = Math.floor(Math.random() * 20) + 10;
                 let sum = 0;
                 let d = [];
-                for (let i=0; i<4; i++) {
-                    let n = mean + Math.floor(Math.random() * 9) - 4;
+                for (let i=0; i<l-1; i++) {
+                    let n = mean + Math.floor(Math.random() * 15) - 7;
                     d.push(n);
                     sum += n;
                 }
-                const target = mean * 5 - sum;
-                return { q: `5つのデータ ${d.join(', ')}, x の平均値が ${mean} のとき、xの値を求めなさい。`, a: `x = ${target}` };
+                const target = mean * l - sum;
+                return { q: `${l}つのデータ ${d.join(', ')}, x の平均値が ${mean} のとき、xの値を求めなさい。`, a: `x = ${target}` };
             }
         };
 
         const generatePolynomials = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 5) + 1;
-                let b = Math.floor(Math.random() * 5) + 1;
-                let c = Math.floor(Math.random() * 5) + 1;
-                let d = Math.floor(Math.random() * 5) + 1;
-                return { q: `(${a}x - ${b}y) + (${c}x + ${d}y)`, a: `${formatTerm(a+c, 'x', true)} ${formatTerm(-b+d, 'y', false)}` };
+                let a = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) a=-a;
+                let b = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) b=-b;
+                let c = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) c=-c;
+                let d = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) d=-d;
+                return { q: `(${a}x ${formatTerm(b,'y',false)}) + (${c}x ${formatTerm(d,'y',false)})`, a: `${formatTerm(a+c, 'x', true)} ${formatTerm(b+d, 'y', false)}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 4) + 2;
-                let b = Math.floor(Math.random() * 4) + 2;
-                let c = Math.floor(Math.random() * 4) + 2;
+                let a = Math.floor(Math.random() * 7) + 2; if(Math.random()>0.5) a=-a;
+                let b = Math.floor(Math.random() * 7) + 2; if(Math.random()>0.5) b=-b;
+                let c = Math.floor(Math.random() * 7) + 2; if(Math.random()>0.5) c=-c;
                 return { q: `${a*c}x^2y \\times ${b}x \\div ${c}y`, a: `${a*b}x^3` };
             } else {
-                let a = Math.floor(Math.random() * 3) + 2;
-                let b = Math.floor(Math.random() * 3) + 2;
+                let a = Math.floor(Math.random() * 5) + 2;
+                let b = Math.floor(Math.random() * 5) + 2; if(Math.random()>0.5) b=-b;
                 return { q: `(-${a}xy)^2 \\times ${b}x \\div ${a}x^2y`, a: `${a*b}xy` };
             }
         };
 
         const generateSimultaneous = (diff) => {
-            let x = Math.floor(Math.random() * 9) - 4;
-            let y = Math.floor(Math.random() * 9) - 4;
+            let x = Math.floor(Math.random() * 15) - 7;
+            let y = Math.floor(Math.random() * 15) - 7;
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 3) + 2;
+                let a = Math.floor(Math.random() * 5) + 2; if(Math.random()>0.5) a=-a;
                 let b = x - a * y;
                 let c = x + y;
                 return { q: `\\begin{cases} x = ${a}y ${formatTerm(b,'',false)} \\\\ x + y = ${c} \\end{cases}`, a: `x = ${x}, y = ${y}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 3) + 2;
-                let b = Math.floor(Math.random() * 3) + 1;
-                let d = Math.floor(Math.random() * 3) + 1;
+                let a = Math.floor(Math.random() * 5) + 2;
+                let b = Math.floor(Math.random() * 5) + 1;
+                let d = Math.floor(Math.random() * 5) + 1;
                 let c1 = a*x + b*y;
                 let c2 = a*x - d*y;
                 return { q: `\\begin{cases} ${a}x + ${b}y = ${c1} \\\\ ${a}x - ${d}y = ${c2} \\end{cases}`, a: `x = ${x}, y = ${y}` };
             } else {
-                let a = 2, b = 3, d = 3, e = -2;
+                let a = Math.floor(Math.random() * 4) + 2;
+                let b = Math.floor(Math.random() * 4) + 2;
+                let d = Math.floor(Math.random() * 4) + 2;
+                let e = Math.floor(Math.random() * 4) + 2; if(Math.random()>0.5) e=-e;
+                if(a*e === b*d) d++;
                 let c1 = a*x + b*y;
                 let c2 = d*x + e*y;
-                return { q: `\\begin{cases} ${a}x + ${b}y = ${c1} \\\\ ${d}x - ${Math.abs(e)}y = ${c2} \\end{cases}`, a: `x = ${x}, y = ${y}` };
+                return { q: `\\begin{cases} ${a}x + ${b}y = ${c1} \\\\ ${d}x ${formatTerm(e,'y',false)} = ${c2} \\end{cases}`, a: `x = ${x}, y = ${y}` };
             }
         };
 
         const generateLinearFunctions = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 5) + 2;
-                let x = Math.floor(Math.random() * 5) + 1;
-                let y = Math.floor(Math.random() * 9) - 4;
+                let a = Math.floor(Math.random() * 9) + 2; if(Math.random()>0.5) a=-a;
+                let x = Math.floor(Math.random() * 7) + 1; if(Math.random()>0.5) x=-x;
+                let y = Math.floor(Math.random() * 19) - 9;
                 let b = y - a * x;
                 return { q: `変化の割合が ${a} で、点(${x}, ${y})を通る直線の式を求めなさい。`, a: `y = ${a}x ${formatTerm(b,'',false)}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 5) - 2; if (a===0) a=2;
-                let x1 = Math.floor(Math.random() * 5) + 1;
-                let x2 = x1 + 2;
-                let b = Math.floor(Math.random() * 9) - 4;
+                let a = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) a=-a;
+                let x1 = Math.floor(Math.random() * 9) - 4;
+                let x2 = x1 + Math.floor(Math.random() * 4) + 1;
+                let b = Math.floor(Math.random() * 19) - 9;
                 return { q: `2点 (${x1}, ${a*x1+b}), (${x2}, ${a*x2+b}) を通る直線の式を求めなさい。`, a: `y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}` };
             } else {
-                let a = Math.floor(Math.random() * 5) + 2;
-                if (Math.random() > 0.5) a = -a;
-                let b = Math.floor(Math.random() * 9) - 4;
-                return { q: `直線 y = ${a}x - 5 に平行で、点(2, ${a*2+b})を通る直線の式を求めなさい。`, a: `y = ${a}x ${formatTerm(b,'',false)}` };
+                let a = Math.floor(Math.random() * 9) + 2; if(Math.random()>0.5) a=-a;
+                let b = Math.floor(Math.random() * 19) - 9;
+                let dummy = Math.floor(Math.random() * 9) + 1;
+                let px = Math.floor(Math.random() * 7) - 3;
+                let py = a * px + b;
+                return { q: `直線 y = ${a}x - ${dummy} に平行で、点(${px}, ${py})を通る直線の式を求めなさい。`, a: `y = ${a}x ${formatTerm(b,'',false)}` };
             }
         };
 
         const generateProbabilities = (diff) => {
             if (diff === 'easy') {
-                const targets = [
-                    { text: '偶数', num: 3, den: 6 },
-                    { text: '奇数', num: 3, den: 6 },
-                    { text: '3以上', num: 4, den: 6 },
-                    { text: '4以下', num: 4, den: 6 },
-                    { text: '素数', num: 3, den: 6 },
-                    { text: '6の約数', num: 4, den: 6 },
-                    { text: '3の倍数', num: 2, den: 6 },
-                    { text: '5以上', num: 2, den: 6 }
-                ];
-                const t = targets[Math.floor(Math.random() * targets.length)];
-                const g = gcd(t.num, t.den);
-                const aStr = t.den/g === 1 ? `${t.num/g}` : `\\frac{${t.num/g}}{${t.den/g}}`;
-                return {
-                    q: `1つのさいころを投げるとき、${t.text}の目が出る確率を求めなさい。`,
-                    a: aStr
-                };
+                const tType = Math.floor(Math.random() * 3);
+                if (tType === 0) {
+                    const targets = [
+                        { text: '偶数', num: 3, den: 6 }, { text: '奇数', num: 3, den: 6 },
+                        { text: '3以上', num: 4, den: 6 }, { text: '4以下', num: 4, den: 6 },
+                        { text: '素数', num: 3, den: 6 }, { text: '6の約数', num: 4, den: 6 },
+                        { text: '3の倍数', num: 2, den: 6 }, { text: '5以上', num: 2, den: 6 }
+                    ];
+                    const t = targets[Math.floor(Math.random() * targets.length)];
+                    const g = gcd(t.num, t.den);
+                    const aStr = t.den/g === 1 ? `${t.num/g}` : `\\frac{${t.num/g}}{${t.den/g}}`;
+                    return { q: `1つのさいころを投げるとき、${t.text}の目が出る確率を求めなさい。`, a: aStr };
+                } else if (tType === 1) {
+                    const max = Math.floor(Math.random() * 11) + 10; // 10 to 20
+                    const targets = ['偶数', '奇数', '3の倍数', '4の倍数', '5の倍数', '素数'];
+                    const target = targets[Math.floor(Math.random() * targets.length)];
+                    let hits = 0;
+                    for (let i = 1; i <= max; i++) {
+                        if (target === '偶数' && i % 2 === 0) hits++;
+                        if (target === '奇数' && i % 2 !== 0) hits++;
+                        if (target === '3の倍数' && i % 3 === 0) hits++;
+                        if (target === '4の倍数' && i % 4 === 0) hits++;
+                        if (target === '5の倍数' && i % 5 === 0) hits++;
+                        if (target === '素数') {
+                            let isPrime = true;
+                            if (i === 1) isPrime = false;
+                            for (let j = 2; j < i; j++) if (i % j === 0) isPrime = false;
+                            if (isPrime) hits++;
+                        }
+                    }
+                    const g = gcd(hits, max);
+                    const aStr = max/g === 1 ? `${hits/g}` : `\\frac{${hits/g}}{${max/g}}`;
+                    return { q: `1から${max}までの整数が書かれたカードが${max}枚ある。この中から1枚引くとき、${target}が出る確率を求めなさい。`, a: aStr };
+                } else {
+                    const colors = [
+                        {n: '赤', v: Math.floor(Math.random() * 5) + 2},
+                        {n: '白', v: Math.floor(Math.random() * 5) + 2},
+                        {n: '青', v: Math.floor(Math.random() * 5) + 2}
+                    ];
+                    const total = colors.reduce((sum, c) => sum + c.v, 0);
+                    const targetC = colors[Math.floor(Math.random() * colors.length)];
+                    const g = gcd(targetC.v, total);
+                    return { q: `袋の中に赤玉が${colors[0].v}個、白玉が${colors[1].v}個、青玉が${colors[2].v}個入っている。ここから玉を1個取り出すとき、${targetC.n}玉が出る確率を求めなさい。`, a: `\\frac{${targetC.v/g}}{${total/g}}` };
+                }
             } else if (diff === 'normal') {
                 const type = Math.floor(Math.random() * 3);
                 if (type === 0) {
@@ -343,8 +389,8 @@
                     const g = gcd(t.num, t.den);
                     return { q: `2枚の硬貨を同時に投げるとき、${t.text}になる確率を求めなさい。`, a: `\\frac{${t.num/g}}{${t.den/g}}` };
                 } else {
-                    const total = Math.floor(Math.random() * 6) + 5; // 5 to 10
-                    const hits = Math.floor(Math.random() * 3) + 2; // 2 to 4
+                    const total = Math.floor(Math.random() * 11) + 10; // 10 to 20
+                    const hits = Math.floor(Math.random() * 4) + 2; // 2 to 5
                     const g = gcd(hits, total);
                     return { q: `${total}本のくじの中に${hits}本の当たりくじが入っている。このくじを1本ひくとき、当たる確率を求めなさい。`, a: `\\frac{${hits/g}}{${total/g}}` };
                 }
@@ -378,72 +424,74 @@
 
         const generateExpansions = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=2;
-                let b = Math.floor(Math.random() * 9) - 4; if (b===0) b=3;
+                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=2;
+                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=3;
                 return { q: `(x ${formatTerm(a,'',false)})(x ${formatTerm(b,'',false)})`, a: `x^2 ${formatTerm(a+b,'x',false)} ${formatTerm(a*b,'',false)}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=5;
+                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=5;
                 if (Math.random() > 0.5) return { q: `(x ${formatTerm(a,'',false)})^2`, a: `x^2 ${formatTerm(2*a,'x',false)} + ${a*a}` };
                 return { q: `(x ${formatTerm(a,'',false)})(x ${formatTerm(-a,'',false)})`, a: `x^2 - ${a*a}` };
             } else {
-                let a = Math.floor(Math.random() * 3) + 2;
-                let b = Math.floor(Math.random() * 5) + 1;
-                let c = Math.floor(Math.random() * 3) + 2;
-                let d = Math.floor(Math.random() * 5) + 1;
-                return { q: `(${a}x + ${b})(${c}x - ${d})`, a: `${a*c}x^2 ${formatTerm(-a*d + b*c,'x',false)} - ${b*d}` };
+                let a = Math.floor(Math.random() * 5) + 2;
+                let b = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) b=-b;
+                let c = Math.floor(Math.random() * 5) + 2;
+                let d = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) d=-d;
+                return { q: `(${a}x ${formatTerm(b,'',false)})(${c}x ${formatTerm(d,'',false)})`, a: `${a*c}x^2 ${formatTerm(a*d + b*c,'x',false)} ${formatTerm(b*d,'',false)}` };
             }
         };
 
         const generateFactorizations = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 4) + 2;
-                let b = Math.floor(Math.random() * 4) + 2;
+                let a = Math.floor(Math.random() * 7) + 2;
+                let b = Math.floor(Math.random() * 9) + 2;
                 return { q: `${a}x^2 + ${a*b}x`, a: `${a}x(x + ${b})` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 9) - 4; if(a===0) a=2;
-                let b = Math.floor(Math.random() * 9) - 4; if(b===0) b=-3;
+                let a = Math.floor(Math.random() * 15) - 7; if(a===0) a=2;
+                let b = Math.floor(Math.random() * 15) - 7; if(b===0) b=-3;
                 return { q: `x^2 ${formatTerm(a+b,'x',false)} ${formatTerm(a*b,'',false)}`, a: `(x ${formatTerm(a,'',false)})(x ${formatTerm(b,'',false)})` };
             } else {
-                let a = Math.floor(Math.random() * 5) + 2;
-                let b = Math.floor(Math.random() * 5) + 2;
+                let a = Math.floor(Math.random() * 7) + 2;
+                let b = Math.floor(Math.random() * 7) + 2;
                 if (Math.random() > 0.5) return { q: `${a}x^2 - ${a*b*b}y^2`, a: `${a}(x + ${b}y)(x - ${b}y)` };
                 return { q: `x^2 - ${a*a}y^2`, a: `(x + ${a}y)(x - ${a}y)` };
             }
         };
 
         const generateSquareRoots = (diff) => {
-            const primes = [2, 3, 5, 7];
+            const primes = [2, 3, 5, 7, 11, 13];
             let p = primes[Math.floor(Math.random() * primes.length)];
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 4) + 2;
-                let b = Math.floor(Math.random() * 4) + 2;
+                let a = Math.floor(Math.random() * 9) + 2;
+                let b = Math.floor(Math.random() * 9) + 2;
                 if (Math.random() > 0.5) b = -b;
                 return { q: `${a}\\sqrt{${p}} ${formatTerm(b,'\\sqrt{'+p+'}',false)}`, a: `${a+b}\\sqrt{${p}}` };
             } else if (diff === 'normal') {
                 let p2 = primes[Math.floor(Math.random() * primes.length)];
-                if (p === p2) p2 = primes.find(x => x !== p);
+                if (p === p2) p2 = primes.find(x => x !== p) || 3;
                 return { q: `\\sqrt{${p}} \\times \\sqrt{${p*p2}}`, a: `${p}\\sqrt{${p2}}` };
             } else {
                 let p2 = primes[Math.floor(Math.random() * primes.length)];
-                if (p === p2) p2 = primes.find(x => x !== p);
-                return { q: `(\\sqrt{${p}} + \\sqrt{${p2}})^2`, a: `${p+p2} + 2\\sqrt{${p*p2}}` };
+                if (p === p2) p2 = primes.find(x => x !== p) || 3;
+                let sign = Math.random() > 0.5 ? '+' : '-';
+                return { q: `(\\sqrt{${p}} ${sign} \\sqrt{${p2}})^2`, a: `${p+p2} ${sign === '+' ? '+' : '-'} 2\\sqrt{${p*p2}}` };
             }
         };
 
         const generateQuadratic = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=2;
-                let b = Math.floor(Math.random() * 9) - 4; if (b===0) b=-3;
+                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=2;
+                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=-3;
                 return { q: `(x ${formatTerm(-a,'',false)})(x ${formatTerm(-b,'',false)}) = 0`, a: `x = ${Math.min(a,b)}, ${Math.max(a,b)}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=4;
-                let b = Math.floor(Math.random() * 9) - 4; if (b===0) b=-2;
+                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=4;
+                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=-2;
                 return { q: `x^2 ${formatTerm(-(a+b),'x',false)} ${formatTerm(a*b,'',false)} = 0`, a: `x = ${Math.min(a,b)}, ${Math.max(a,b)}` };
             } else {
-                let b = Math.floor(Math.random() * 4) * 2 + 2; // 偶数 2, 4, 6, 8
-                let c = Math.floor(Math.random() * 5) + 1;
+                let b = Math.floor(Math.random() * 6) * 2 + 2; // 2, 4, 6, 8, 10, 12
+                if(Math.random() > 0.5) b = -b;
+                let c = Math.floor(Math.random() * 9) + 1;
                 let inside = (b/2)*(b/2) + c; 
-                return { q: `x^2 + ${b}x - ${c} = 0`, a: `x = -${b/2} \\pm \\sqrt{${inside}}` };
+                return { q: `x^2 ${formatTerm(b,'x',false)} - ${c} = 0`, a: `x = ${-b/2} \\pm \\sqrt{${inside}}` };
             }
         };
 
@@ -600,7 +648,7 @@
 
                 const newProblems = [];
                 let attempts = 0;
-                const maxAttempts = count * 20; // 無限ループ防止用
+                const maxAttempts = count * 50; // 強力な無限ループ防止用
 
                 while (newProblems.length < count && attempts < maxAttempts) {
                     const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
@@ -615,9 +663,12 @@
                 }
 
                 // 万が一バリエーションが枯渇し問題数が不足する場合は、重複を許可して補充
+                // 重複問題には見えないスペースを付与してReactのkey重複や同一文字列チェックをバイパスする
                 while (newProblems.length < count) {
                     const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
-                    newProblems.push(generators[randomUnitId](difficulty));
+                    let newProblem = generators[randomUnitId](difficulty);
+                    let suffix = " ".repeat(newProblems.length); 
+                    newProblems.push({ q: newProblem.q + suffix, a: newProblem.a });
                 }
 
                 setProblems(newProblems);
