@@ -82,6 +82,13 @@
             </svg>
         );
 
+        const BackIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+        );
+
         // --- Helper Functions ---
         const formatTerm = (c, v, isFirst) => {
             if (c === 0) return '';
@@ -178,29 +185,61 @@
                 let x = Math.floor(Math.random() * 5) + 2;
                 return { q: `yはxに比例し、x=${x}のときy=${a*x}である。yをxの式で表しなさい。`, a: `y = ${formatTerm(a,'x',true)}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 5) + 2;
-                let x = Math.floor(Math.random() * 4) + 2;
-                return { q: `yはxに反比例し、x=${x}のときy=${a}である。yをxの式で表しなさい。`, a: `y = \\frac{${a*x}}{x}` };
+                let a = Math.floor(Math.random() * 8) + 2;
+                let x = Math.floor(Math.random() * 6) + 2;
+                if (Math.random() > 0.5) {
+                    return { q: `yはxに反比例し、x=${x}のときy=${a}である。yをxの式で表しなさい。`, a: `y = \\frac{${a*x}}{x}` };
+                } else {
+                    return { q: `yはxに反比例し、x=${x}のときy=${-a}である。yをxの式で表しなさい。`, a: `y = -\\frac{${a*x}}{x}` };
+                }
             } else {
                 let a = Math.floor(Math.random() * 9) - 4; if (a===0) a=5;
-                let x = 2;
+                let x = Math.floor(Math.random() * 3) + 2;
                 let y = a * x;
-                return { q: `yはxに比例し、x=${x}のときy=${y}である。x=-3のときのyの値を求めなさい。`, a: `y = ${a * -3}` };
+                let q_x = Math.floor(Math.random() * 5) - 6; if (q_x===0) q_x=-3;
+                return { q: `yはxに比例し、x=${x}のときy=${y}である。x=${q_x}のときのyの値を求めなさい。`, a: `y = ${a * q_x}` };
             }
         };
 
         const generateDataAnalysis = (diff) => {
-            if (diff === 'easy') {
-                let d = Array.from({length: 5}, () => Math.floor(Math.random() * 20) + 1);
+            const types = diff === 'easy' ? ['median_odd', 'mean'] : diff === 'normal' ? ['median_even', 'mean'] : ['range', 'mean_reverse'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            if (type === 'median_odd') {
+                let d = Array.from({length: 5}, () => Math.floor(Math.random() * 30) + 1);
                 let sorted = [...d].sort((a,b) => a-b);
                 return { q: `次のデータの中央値(メジアン)を求めなさい。 ${d.join(', ')}`, a: `${sorted[2]}` };
-            } else if (diff === 'normal') {
+            } else if (type === 'median_even') {
                 let d = Array.from({length: 6}, () => Math.floor(Math.random() * 30) + 1);
                 let sorted = [...d].sort((a,b) => a-b);
                 return { q: `次のデータの中央値を求めなさい。 ${d.join(', ')}`, a: `${(sorted[2] + sorted[3]) / 2}` };
-            } else {
-                let d = Array.from({length: 5}, () => Math.floor(Math.random() * 30) + 1);
+            } else if (type === 'range') {
+                let d = Array.from({length: 5}, () => Math.floor(Math.random() * 40) + 1);
                 return { q: `次のデータの範囲(レンジ)を求めなさい。 ${d.join(', ')}`, a: `${Math.max(...d) - Math.min(...d)}` };
+            } else if (type === 'mean') {
+                const mean = Math.floor(Math.random() * 10) + 5;
+                let sum = 0;
+                let d = [];
+                for (let i=0; i<4; i++) {
+                    let n = mean + Math.floor(Math.random() * 9) - 4;
+                    if (n < 1) n = 1;
+                    d.push(n);
+                    sum += n;
+                }
+                d.push(mean * 5 - sum);
+                d.sort(() => Math.random() - 0.5);
+                return { q: `次のデータの平均値を求めなさい。 ${d.join(', ')}`, a: `${mean}` };
+            } else if (type === 'mean_reverse') {
+                const mean = Math.floor(Math.random() * 10) + 10;
+                let sum = 0;
+                let d = [];
+                for (let i=0; i<4; i++) {
+                    let n = mean + Math.floor(Math.random() * 9) - 4;
+                    d.push(n);
+                    sum += n;
+                }
+                const target = mean * 5 - sum;
+                return { q: `5つのデータ ${d.join(', ')}, x の平均値が ${mean} のとき、xの値を求めなさい。`, a: `x = ${target}` };
             }
         };
 
@@ -261,6 +300,7 @@
                 return { q: `2点 (${x1}, ${a*x1+b}), (${x2}, ${a*x2+b}) を通る直線の式を求めなさい。`, a: `y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}` };
             } else {
                 let a = Math.floor(Math.random() * 5) + 2;
+                if (Math.random() > 0.5) a = -a;
                 let b = Math.floor(Math.random() * 9) - 4;
                 return { q: `直線 y = ${a}x - 5 に平行で、点(2, ${a*2+b})を通る直線の式を求めなさい。`, a: `y = ${a}x ${formatTerm(b,'',false)}` };
             }
@@ -268,12 +308,71 @@
 
         const generateProbabilities = (diff) => {
             if (diff === 'easy') {
-                return { q: `1つのさいころを投げるとき、素数の目が出る確率を求めなさい。`, a: `\\frac{1}{2}` };
+                const targets = [
+                    { text: '偶数', num: 3, den: 6 },
+                    { text: '奇数', num: 3, den: 6 },
+                    { text: '3以上', num: 4, den: 6 },
+                    { text: '4以下', num: 4, den: 6 },
+                    { text: '素数', num: 3, den: 6 },
+                    { text: '6の約数', num: 4, den: 6 },
+                    { text: '3の倍数', num: 2, den: 6 },
+                    { text: '5以上', num: 2, den: 6 }
+                ];
+                const t = targets[Math.floor(Math.random() * targets.length)];
+                const g = gcd(t.num, t.den);
+                const aStr = t.den/g === 1 ? `${t.num/g}` : `\\frac{${t.num/g}}{${t.den/g}}`;
+                return {
+                    q: `1つのさいころを投げるとき、${t.text}の目が出る確率を求めなさい。`,
+                    a: aStr
+                };
             } else if (diff === 'normal') {
-                let t = Math.floor(Math.random() * 3) + 5;
-                return { q: `2つのさいころを同時に投げるとき、出る目の和が${t}になる確率を求めなさい。`, a: `\\frac{${t-1 < 7 ? t-1 : 13-t}}{36}` };
+                const type = Math.floor(Math.random() * 3);
+                if (type === 0) {
+                    let t = Math.floor(Math.random() * 9) + 3; // 3 to 11
+                    let ways = 0;
+                    for(let i=1; i<=6; i++) for(let j=1; j<=6; j++) if(i+j === t) ways++;
+                    const g = gcd(ways, 36);
+                    return { q: `2つのさいころを同時に投げるとき、出る目の和が${t}になる確率を求めなさい。`, a: `\\frac{${ways/g}}{${36/g}}` };
+                } else if (type === 1) {
+                    const targets = [
+                        { text: '2枚とも表', num: 1, den: 4 },
+                        { text: '2枚とも裏', num: 1, den: 4 },
+                        { text: '1枚が表で1枚が裏', num: 2, den: 4 }
+                    ];
+                    const t = targets[Math.floor(Math.random() * targets.length)];
+                    const g = gcd(t.num, t.den);
+                    return { q: `2枚の硬貨を同時に投げるとき、${t.text}になる確率を求めなさい。`, a: `\\frac{${t.num/g}}{${t.den/g}}` };
+                } else {
+                    const total = Math.floor(Math.random() * 6) + 5; // 5 to 10
+                    const hits = Math.floor(Math.random() * 3) + 2; // 2 to 4
+                    const g = gcd(hits, total);
+                    return { q: `${total}本のくじの中に${hits}本の当たりくじが入っている。このくじを1本ひくとき、当たる確率を求めなさい。`, a: `\\frac{${hits/g}}{${total/g}}` };
+                }
             } else {
-                return { q: `3枚の硬貨を同時に投げるとき、2枚が表で1枚が裏になる確率を求めなさい。`, a: `\\frac{3}{8}` };
+                const type = Math.floor(Math.random() * 2);
+                if (type === 0) {
+                    const targets = [
+                        { text: '3枚とも表', num: 1, den: 8 },
+                        { text: '3枚とも裏', num: 1, den: 8 },
+                        { text: '2枚が表で1枚が裏', num: 3, den: 8 },
+                        { text: '少なくとも1枚は表', num: 7, den: 8 }
+                    ];
+                    const t = targets[Math.floor(Math.random() * targets.length)];
+                    const g = gcd(t.num, t.den);
+                    return { q: `3枚の硬貨を同時に投げるとき、${t.text}になる確率を求めなさい。`, a: `\\frac{${t.num/g}}{${t.den/g}}` };
+                } else {
+                    const red = Math.floor(Math.random() * 3) + 2; // 2-4
+                    const white = Math.floor(Math.random() * 3) + 2; // 2-4
+                    const total = red + white;
+                    const totalWays = (total * (total - 1)) / 2;
+                    const redWays = (red * (red - 1)) / 2;
+                    const diffWays = red * white;
+                    const isRed = Math.random() > 0.5;
+                    const ways = isRed ? redWays : diffWays;
+                    const text = isRed ? '2個とも赤玉' : '赤玉と白玉が1個ずつ';
+                    const g = gcd(ways, totalWays);
+                    return { q: `赤玉${red}個と白玉${white}個が入った袋から、同時に2個の玉を取り出すとき、${text}になる確率を求めなさい。`, a: `\\frac{${ways/g}}{${totalWays/g}}` };
+                }
             }
         };
 
@@ -318,7 +417,8 @@
             if (diff === 'easy') {
                 let a = Math.floor(Math.random() * 4) + 2;
                 let b = Math.floor(Math.random() * 4) + 2;
-                return { q: `${a}\\sqrt{${p}} + ${b}\\sqrt{${p}}`, a: `${a+b}\\sqrt{${p}}` };
+                if (Math.random() > 0.5) b = -b;
+                return { q: `${a}\\sqrt{${p}} ${formatTerm(b,'\\sqrt{'+p+'}',false)}`, a: `${a+b}\\sqrt{${p}}` };
             } else if (diff === 'normal') {
                 let p2 = primes[Math.floor(Math.random() * primes.length)];
                 if (p === p2) p2 = primes.find(x => x !== p);
@@ -499,10 +599,27 @@
                 setError('');
 
                 const newProblems = [];
-                for (let i = 0; i < count; i++) {
+                let attempts = 0;
+                const maxAttempts = count * 20; // 無限ループ防止用
+
+                while (newProblems.length < count && attempts < maxAttempts) {
+                    const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
+                    const newProblem = generators[randomUnitId](difficulty);
+                    
+                    // 重複チェック: まだ同じ問題文が追加されていなければ追加する
+                    const isDuplicate = newProblems.some(p => p.q === newProblem.q);
+                    if (!isDuplicate) {
+                        newProblems.push(newProblem);
+                    }
+                    attempts++;
+                }
+
+                // 万が一バリエーションが枯渇し問題数が不足する場合は、重複を許可して補充
+                while (newProblems.length < count) {
                     const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
                     newProblems.push(generators[randomUnitId](difficulty));
                 }
+
                 setProblems(newProblems);
                 setShowAnswers(false);
             };
