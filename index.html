@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中学校 数学 小テスト作成ツール</title>
+    <title>中学校 数学 小テスト作成ツール (拡張版)</title>
     
     <!-- Tailwind CSS (スタイリング用) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -82,416 +82,579 @@
             </svg>
         );
 
-        const BackIcon = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-        );
-
-        // --- Helper Functions ---
+        // --- Utils ---
+        const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const nonZeroRand = (min, max) => { let r = 0; while (r === 0) r = rand(min, max); return r; };
+        const choice = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const gcd = (a, b) => b === 0 ? Math.abs(a) : gcd(b, a % b);
         const formatTerm = (c, v, isFirst) => {
             if (c === 0) return '';
-            let sign = '';
-            if (c < 0) {
-                sign = isFirst ? '-' : '- ';
-            } else {
-                sign = isFirst ? '' : '+ ';
-            }
+            let sign = c < 0 ? (isFirst ? '-' : '- ') : (isFirst ? '' : '+ ');
             let absC = Math.abs(c);
             let coef = (absC === 1 && v !== '') ? '' : absC;
             return `${sign}${coef}${v}`;
         };
-
-        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+        const wrapP = (num) => num < 0 ? `(${num})` : `${num}`;
 
         // --- Problem Generators ---
+
         const generateIntegers = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 31) - 15;
-                let b = Math.floor(Math.random() * 31) - 15;
-                let op = Math.random() > 0.5 ? '+' : '-';
-                return { q: `${a} ${op} ${b < 0 ? `(${b})` : b}`, a: `${op === '+' ? a + b : a - b}` };
+                if (type === 0) { // 2項加減
+                    let a = rand(-15, 15); let b = rand(-15, 15);
+                    let op = choice(['+', '-']);
+                    return { q: `${a} ${op} ${wrapP(b)}`, a: `${op === '+' ? a + b : a - b}` };
+                } else if (type === 1) { // 小数1桁
+                    let a = nonZeroRand(-9, 9) / 10; let b = nonZeroRand(-9, 9) / 10;
+                    let ans = Math.round((a + b)*10)/10;
+                    return { q: `${a} + ${b < 0 ? `(${b})` : b}`, a: `${ans}` };
+                } else { // 2項乗除
+                    let a = nonZeroRand(-9, 9); let b = nonZeroRand(-9, 9);
+                    if (Math.random() > 0.5) return { q: `${a} \\times ${wrapP(b)}`, a: `${a * b}` };
+                    let ans = a; a = a * b;
+                    return { q: `${a} \\div ${wrapP(b)}`, a: `${ans}` };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 25) - 12;
-                let b = Math.floor(Math.random() * 25) - 12;
-                if (b === 0) b = 1;
-                let op = Math.random() > 0.5 ? '\\times' : '\\div';
-                let ans;
-                if (op === '\\times') ans = a * b;
-                else { ans = a; a = a * b; }
-                return { q: `${a} ${op} ${b < 0 ? `(${b})` : b}`, a: `${ans}` };
+                if (type === 0) { // 3項加減
+                    let a = rand(-10, 10); let b = rand(-10, 10); let c = rand(-10, 10);
+                    let op1 = choice(['+', '-']); let op2 = choice(['+', '-']);
+                    let ans = (op1 === '+' ? a + b : a - b);
+                    ans = (op2 === '+' ? ans + c : ans - c);
+                    return { q: `${a} ${op1} ${wrapP(b)} ${op2} ${wrapP(c)}`, a: `${ans}` };
+                } else if (type === 1) { // 乗除混合
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5); let c = nonZeroRand(-5, 5);
+                    let p = a * b * c;
+                    return { q: `${p} \\div ${wrapP(a)} \\times ${wrapP(b)}`, a: `${b * b * c}` };
+                } else { // 分数の加減(同分母)
+                    let den = choice([3, 5, 7]); let num1 = nonZeroRand(-5, 5); let num2 = nonZeroRand(-5, 5);
+                    let ansNum = num1 + num2; let g = gcd(ansNum, den);
+                    let aStr = ansNum === 0 ? "0" : (den/g === 1 ? `${ansNum/g}` : `\\frac{${ansNum/g}}{${den/g}}`);
+                    if(ansNum/g < 0 && den/g !== 1) aStr = `-\\frac{${Math.abs(ansNum/g)}}{${den/g}}`;
+                    return { q: `\\frac{${num1}}{${den}} + ${num2 < 0 ? `(-\\frac{${-num2}}{${den}})` : `\\frac{${num2}}{${den}}`}`, a: aStr };
+                }
             } else {
-                let a = Math.floor(Math.random() * 31) - 15;
-                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=2;
-                let c = Math.floor(Math.random() * 15) - 7; if (c===0) c=3;
-                return { q: `${a} - ${b < 0 ? `(${b})` : b} \\times ${c < 0 ? `(${c})` : c}`, a: `${a - b * c}` };
+                if (type === 0) { // 四則混合
+                    let a = nonZeroRand(-9, 9); let b = nonZeroRand(-5, 5); let c = nonZeroRand(-5, 5);
+                    return { q: `${a} - ${wrapP(b)} \\times ${wrapP(c)}`, a: `${a - b * c}` };
+                } else if (type === 1) { // 累乗を含む
+                    let a = choice([-2, -3, 2, 3]); let b = nonZeroRand(-5, 5); let c = nonZeroRand(-10, 10);
+                    return { q: `${a}^2 \\times ${wrapP(b)} + ${wrapP(c)}`, a: `${(a*a)*b + c}` };
+                } else { // カッコつき
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5); let c = nonZeroRand(-5, 5);
+                    return { q: `${a} \\times (${b} - ${wrapP(c)})`, a: `${a * (b - c)}` };
+                }
             }
         };
 
         const generateAlgebraic = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 15) - 7; if(a===0) a=1;
-                let b = Math.floor(Math.random() * 15) - 7; if(b===0) b=2;
-                return { q: `${formatTerm(a, 'x', true)} ${formatTerm(b, 'x', false)}`, a: `${formatTerm(a+b, 'x', true) || '0'}` };
+                if (type === 0) { // 単純同類項
+                    let a = rand(2, 9); let b = rand(2, 9);
+                    let op = choice(['+', '-']);
+                    return { q: `${a}x ${op} ${b}x`, a: `${op === '+' ? a+b : a-b}x` };
+                } else if (type === 1) { // 単項式 * 数
+                    let a = nonZeroRand(-9, 9); let b = nonZeroRand(-5, 5);
+                    return { q: `${a}a \\times ${wrapP(b)}`, a: `${a*b}a` };
+                } else { // 1次式 + 1次式
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    let c = nonZeroRand(-5, 5); let d = nonZeroRand(-5, 5);
+                    return { q: `(${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}) + (${formatTerm(c,'x',true)} ${formatTerm(d,'',false)})`, a: `${formatTerm(a+c,'x',true)} ${formatTerm(b+d,'',false)}` || '0' };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 9) - 4; if(a===0) a=3;
-                let b = Math.floor(Math.random() * 15) - 7;
-                let c = Math.floor(Math.random() * 9) - 4; if(c===0) c=2;
-                let d = Math.floor(Math.random() * 15) - 7;
-                let qLeft = a === 1 ? `(x ${formatTerm(-b, '', false)})` : a === -1 ? `-(x ${formatTerm(-b, '', false)})` : `${a}(x ${formatTerm(-b, '', false)})`;
-                return { q: `${qLeft} ${formatTerm(-c, '(x ' + formatTerm(-d, '', false) + ')', false)}`, a: `${formatTerm(a-c, 'x', true)} ${formatTerm(-a*b + c*d, '', false)}` || '0' };
+                if (type === 0) { // 括弧の展開
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5); let c = nonZeroRand(-5, 5);
+                    return { q: `${a}(${formatTerm(b,'x',true)} ${formatTerm(c,'',false)})`, a: `${formatTerm(a*b,'x',true)} ${formatTerm(a*c,'',false)}` };
+                } else if (type === 1) { // 展開と加減
+                    let a = nonZeroRand(2, 5); let b = nonZeroRand(2, 5);
+                    return { q: `${a}(x - 2) + ${b}(2x + 1)`, a: `${formatTerm(a+2*b,'x',true)} ${formatTerm(-2*a+b,'',false)}` };
+                } else { // 分数と乗法
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    let den = choice([2, 3, 4]); let mul = den * nonZeroRand(2, 4);
+                    return { q: `\\frac{${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}}{${den}} \\times ${mul}`, a: `${formatTerm(a*(mul/den),'x',true)} ${formatTerm(b*(mul/den),'',false)}` };
+                }
             } else {
-                let a = Math.floor(Math.random() * 7) + 1;
-                let b = Math.floor(Math.random() * 11) - 5;
-                let d = Math.floor(Math.random() * 7) + 1;
-                let e = Math.floor(Math.random() * 11) - 5;
-                let denom1 = Math.floor(Math.random() * 3) + 2; // 2,3,4
-                let denom2 = Math.floor(Math.random() * 4) + 3; // 3,4,5,6
-                if (denom1 === denom2) denom2++;
-                let lcm = (denom1 * denom2) / gcd(denom1, denom2);
-                let m1 = lcm / denom1;
-                let m2 = lcm / denom2;
-                let ansX = a * m1 - d * m2;
-                let ansC = -b * m1 - (-e) * m2;
-                return { 
-                    q: `\\frac{${formatTerm(a,'x',true)} ${formatTerm(-b,'',false)}}{${denom1}} - \\frac{${formatTerm(d,'x',true)} ${formatTerm(-e,'',false)}}{${denom2}}`, 
-                    a: `\\frac{${formatTerm(ansX,'x',true)} ${formatTerm(ansC,'',false)}}{${lcm}}`
-                };
+                if (type === 0) { // 分数の通分加減
+                    let den1 = choice([2, 3]); let den2 = choice([4, 5]);
+                    let a = rand(1, 3); let b = nonZeroRand(-3, 3);
+                    let c = rand(1, 3); let d = nonZeroRand(-3, 3);
+                    let lcm = den1 * den2;
+                    let ansX = a*den2 + c*den1; let ansC = b*den2 + d*den1;
+                    return { q: `\\frac{${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}}{${den1}} + \\frac{${formatTerm(c,'x',true)} ${formatTerm(d,'',false)}}{${den2}}`, a: `\\frac{${formatTerm(ansX,'x',true)} ${formatTerm(ansC,'',false)}}{${lcm}}` };
+                } else { // 複雑な分配法則
+                    let a = nonZeroRand(-4, 4); let b = nonZeroRand(-4, 4); let c = nonZeroRand(-4, 4);
+                    let d = nonZeroRand(-4, 4); let e = nonZeroRand(-4, 4); let f = nonZeroRand(-4, 4);
+                    return { q: `${a}(${formatTerm(b,'x',true)} ${formatTerm(c,'y',false)}) - ${d}(${formatTerm(e,'x',true)} ${formatTerm(f,'y',false)})`, a: `${formatTerm(a*b - d*e,'x',true)} ${formatTerm(a*c - d*f,'y',false)}` || '0' };
+                }
             }
         };
 
         const generateLinearEquations = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let x = Math.floor(Math.random() * 25) - 12;
-                let a = Math.floor(Math.random() * 25) - 12;
-                let b = x + a;
-                if (Math.random() > 0.5) return { q: `x ${formatTerm(a, '', false)} = ${b}`, a: `x = ${x}` };
-                let c = Math.floor(Math.random() * 15) - 7; if (c===0) c=2;
-                return { q: `${c}x = ${c * x}`, a: `x = ${x}` };
+                if (type === 0) { // x + a = b
+                    let ans = rand(-10, 10); let a = rand(-10, 10);
+                    return { q: `x ${formatTerm(a,'',false)} = ${ans + a}`, a: `x = ${ans}` };
+                } else if (type === 1) { // ax = b
+                    let ans = rand(-10, 10); let a = nonZeroRand(-6, 6);
+                    return { q: `${a}x = ${a * ans}`, a: `x = ${ans}` };
+                } else { // x/a = b
+                    let ans = rand(-10, 10); let a = choice([2, 3, 4, 5]);
+                    return { q: `\\frac{x}{${a}} = ${ans}`, a: `x = ${ans * a}` };
+                }
             } else if (diff === 'normal') {
-                let x = Math.floor(Math.random() * 21) - 10;
-                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=2;
-                let c = Math.floor(Math.random() * 15) - 7; if (c===a) c=a-1;
-                let b = Math.floor(Math.random() * 21) - 10;
-                let d = a * x + b - c * x;
-                return { q: `${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} = ${formatTerm(c,'x',true)} ${formatTerm(d,'',false)}`, a: `x = ${x}` };
+                if (type === 0) { // ax + b = c
+                    let ans = rand(-8, 8); let a = nonZeroRand(-5, 5); let b = nonZeroRand(-10, 10);
+                    return { q: `${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} = ${a*ans + b}`, a: `x = ${ans}` };
+                } else if (type === 1) { // ax = bx + c
+                    let ans = rand(-8, 8); let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    if(a===b) a++;
+                    return { q: `${formatTerm(a,'x',true)} = ${formatTerm(b,'x',true)} ${formatTerm((a-b)*ans,'',false)}`, a: `x = ${ans}` };
+                } else { // ax + b = cx + d
+                    let ans = rand(-8, 8); let a = nonZeroRand(-5, 5); let c = nonZeroRand(-5, 5);
+                    if(a===c) c++;
+                    let b = nonZeroRand(-10, 10); let d = a*ans + b - c*ans;
+                    return { q: `${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} = ${formatTerm(c,'x',true)} ${formatTerm(d,'',false)}`, a: `x = ${ans}` };
+                }
             } else {
-                let x = Math.floor(Math.random() * 15) - 7;
-                let a = Math.floor(Math.random() * 7) + 2; if(Math.random() > 0.5) a = -a;
-                let b = Math.floor(Math.random() * 15) - 7;
-                let c = Math.floor(Math.random() * 7) + 1; if(Math.random() > 0.5) c = -c;
-                if (a === c) c--;
-                let d = a * (x + b) - c * x;
-                return { q: `${a}(x ${formatTerm(b,'',false)}) = ${formatTerm(c,'x',true)} ${formatTerm(d,'',false)}`, a: `x = ${x}` };
+                if (type === 0) { // 括弧あり a(x+b) = cx + d
+                    let ans = rand(-6, 6); let a = nonZeroRand(2, 5); let b = nonZeroRand(-5, 5);
+                    let c = nonZeroRand(-4, 4); if(a===c) c--;
+                    let d = a*(ans+b) - c*ans;
+                    return { q: `${a}(x ${formatTerm(b,'',false)}) = ${formatTerm(c,'x',true)} ${formatTerm(d,'',false)}`, a: `x = ${ans}` };
+                } else if (type === 1) { // 小数係数
+                    let ans = rand(-9, 9); let a = nonZeroRand(1, 5); let c = nonZeroRand(1, 5); if(a===c) c++;
+                    let b = nonZeroRand(-9, 9); let d = a*ans + b - c*ans;
+                    return { q: `${a/10}x ${formatTerm(b/10,'',false)} = ${c/10}x ${formatTerm(d/10,'',false)}`, a: `x = ${ans}` };
+                } else { // 分数係数 x/a + b = x/c
+                    let ans = choice([6, 12, -6, -12, 24]);
+                    let a = choice([2, 3]); let c = choice([4, 6]);
+                    let b = (ans/c) - (ans/a);
+                    return { q: `\\frac{x}{${a}} ${formatTerm(b,'',false)} = \\frac{x}{${c}}`, a: `x = ${ans}` };
+                }
             }
         };
 
         const generateProportions = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=3;
-                let x = Math.floor(Math.random() * 9) + 2; if(Math.random() > 0.5) x = -x;
-                return { q: `yはxに比例し、x=${x}のときy=${a*x}である。yをxの式で表しなさい。`, a: `y = ${formatTerm(a,'x',true)}` };
-            } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 13) + 2;
-                let x = Math.floor(Math.random() * 11) + 2;
-                if (Math.random() > 0.5) {
-                    return { q: `yはxに反比例し、x=${x}のときy=${a}である。yをxの式で表しなさい。`, a: `y = \\frac{${a*x}}{x}` };
+                if (type === 0) {
+                    let a = nonZeroRand(-6, 6); let x = rand(2, 6);
+                    return { q: `yはxに比例し、x=${x}のときy=${a*x}である。比例定数を求めなさい。`, a: `${a}` };
+                } else if (type === 1) {
+                    let a = nonZeroRand(-6, 6); let x = rand(2, 6);
+                    return { q: `yはxに比例し、x=${x}のときy=${a*x}である。yをxの式で表しなさい。`, a: `y = ${formatTerm(a,'x',true)}` };
                 } else {
-                    return { q: `yはxに反比例し、x=${x}のときy=${-a}である。yをxの式で表しなさい。`, a: `y = -\\frac{${a*x}}{x}` };
+                    let a = nonZeroRand(2, 8); let x = rand(2, 6);
+                    return { q: `yはxに反比例し、x=${x}のときy=${a}である。比例定数を求めなさい。`, a: `${a*x}` };
+                }
+            } else if (diff === 'normal') {
+                if (type === 0) {
+                    let a = nonZeroRand(-8, 8); let x = rand(2, 6);
+                    return { q: `yはxに反比例し、x=${x}のときy=${a}である。yをxの式で表しなさい。`, a: `y = \\frac{${a*x}}{x}` };
+                } else if (type === 1) {
+                    let a = nonZeroRand(2, 5); let x1 = rand(2, 4); let x2 = rand(5, 8);
+                    return { q: `yはxに比例し、x=${x1}のときy=${a*x1}である。x=${x2}のときのyの値を求めなさい。`, a: `y = ${a*x2}` };
+                } else {
+                    let p = rand(12, 36); let x1 = rand(2, 4); let y1 = p/x1; let x2 = choice([2,3,4,6]);
+                    while(p % x2 !== 0 || x1 === x2) x2 = choice([2,3,4,6]);
+                    return { q: `yはxに反比例し、x=${x1}のときy=${y1}である。x=${x2}のときのyの値を求めなさい。`, a: `y = ${p/x2}` };
                 }
             } else {
-                let a = Math.floor(Math.random() * 13) - 6; if (a===0) a=5;
-                let x = Math.floor(Math.random() * 5) + 2;
-                let y = a * x;
-                let q_x = Math.floor(Math.random() * 9) - 10; if (q_x===0) q_x=-3;
-                return { q: `yはxに比例し、x=${x}のときy=${y}である。x=${q_x}のときのyの値を求めなさい。`, a: `y = ${a * q_x}` };
+                if (type === 0) {
+                    let a = nonZeroRand(-5, -2); let minX = rand(1, 3); let maxX = rand(4, 6);
+                    return { q: `関数 y = ${a}x について、xの変域が ${minX} \\leqq x \\leqq ${maxX} のときのyの変域を求めなさい。`, a: `${a*maxX} \\leqq y \\leqq ${a*minX}` };
+                } else if (type === 1) {
+                    let a = choice([12, 24, 36]); let minX = rand(2, 3); let maxX = rand(4, 6);
+                    return { q: `関数 y = \\frac{${a}}{x} について、xの変域が ${minX} \\leqq x \\leqq ${maxX} のときのyの変域を求めなさい。`, a: `${a/maxX} \\leqq y \\leqq ${a/minX}` };
+                } else {
+                    let speed = rand(40, 80); let time = rand(10, 20);
+                    return { q: `毎分${speed}mの速さで歩くと${time}分かかる道のりを、毎分x mの速さで走るとy分かかる。yをxの式で表しなさい。`, a: `y = \\frac{${speed*time}}{x}` };
+                }
             }
         };
 
         const generateDataAnalysis = (diff) => {
-            const types = diff === 'easy' ? ['median_odd', 'mean'] : diff === 'normal' ? ['median_even', 'mean'] : ['range', 'mean_reverse'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            
-            if (type === 'median_odd') {
-                let l = Math.floor(Math.random() * 3) * 2 + 5; // 5, 7, 9
-                let d = Array.from({length: l}, () => Math.floor(Math.random() * 50) + 1);
-                let sorted = [...d].sort((a,b) => a-b);
-                return { q: `次のデータの中央値(メジアン)を求めなさい。 ${d.join(', ')}`, a: `${sorted[Math.floor(l/2)]}` };
-            } else if (type === 'median_even') {
-                let l = Math.floor(Math.random() * 3) * 2 + 6; // 6, 8, 10
-                let d = Array.from({length: l}, () => Math.floor(Math.random() * 50) + 1);
-                let sorted = [...d].sort((a,b) => a-b);
-                return { q: `次のデータの中央値を求めなさい。 ${d.join(', ')}`, a: `${(sorted[l/2 - 1] + sorted[l/2]) / 2}` };
-            } else if (type === 'range') {
-                let l = Math.floor(Math.random() * 5) + 5; // 5 to 9
-                let d = Array.from({length: l}, () => Math.floor(Math.random() * 100) + 1);
-                return { q: `次のデータの範囲(レンジ)を求めなさい。 ${d.join(', ')}`, a: `${Math.max(...d) - Math.min(...d)}` };
-            } else if (type === 'mean') {
-                let l = Math.floor(Math.random() * 4) + 4; // 4 to 7
-                const mean = Math.floor(Math.random() * 20) + 10;
-                let sum = 0;
-                let d = [];
-                for (let i=0; i<l-1; i++) {
-                    let n = mean + Math.floor(Math.random() * 15) - 7;
-                    if (n < 1) n = 1;
-                    d.push(n);
-                    sum += n;
+            const type = rand(0, 2);
+            if (diff === 'easy') {
+                if (type === 0) { // 平均
+                    let arr = Array.from({length: 5}, () => rand(10, 20));
+                    let sum = arr.reduce((a,b)=>a+b, 0);
+                    return { q: `次のデータの平均値を求めなさい。 ${arr.join(', ')}`, a: `${sum/5}` };
+                } else if (type === 1) { // 奇数の中央値
+                    let arr = Array.from({length: 5}, () => rand(1, 15)).sort((a,b)=>a-b);
+                    return { q: `次のデータの中央値(メジアン)を求めなさい。 ${arr.join(', ')}`, a: `${arr[2]}` };
+                } else { // 最頻値
+                    let val = rand(5, 10);
+                    let arr = [val, val, rand(1,4), rand(11,15), val].sort(() => Math.random() - 0.5);
+                    return { q: `次のデータの最頻値(モード)を求めなさい。 ${arr.join(', ')}`, a: `${val}` };
                 }
-                d.push(mean * l - sum);
-                d.sort(() => Math.random() - 0.5);
-                return { q: `次のデータの平均値を求めなさい。 ${d.join(', ')}`, a: `${mean}` };
-            } else if (type === 'mean_reverse') {
-                let l = Math.floor(Math.random() * 3) + 4; // 4 to 6
-                const mean = Math.floor(Math.random() * 20) + 10;
-                let sum = 0;
-                let d = [];
-                for (let i=0; i<l-1; i++) {
-                    let n = mean + Math.floor(Math.random() * 15) - 7;
-                    d.push(n);
-                    sum += n;
+            } else if (diff === 'normal') {
+                if (type === 0) { // 偶数の中央値
+                    let arr = Array.from({length: 6}, () => rand(5, 25)).sort((a,b)=>a-b);
+                    return { q: `次のデータの中央値を求めなさい。 ${arr.join(', ')}`, a: `${(arr[2]+arr[3])/2}` };
+                } else if (type === 1) { // 範囲
+                    let arr = Array.from({length: 6}, () => rand(10, 50));
+                    return { q: `次のデータの範囲(レンジ)を求めなさい。 ${arr.join(', ')}`, a: `${Math.max(...arr) - Math.min(...arr)}` };
+                } else { // 相対度数
+                    let total = choice([20, 25, 40, 50]);
+                    let freq = rand(2, 10);
+                    return { q: `全体の度数が${total}、ある階級の度数が${freq}のとき、この階級の相対度数を求めなさい。`, a: `${freq/total}` };
                 }
-                const target = mean * l - sum;
-                return { q: `${l}つのデータ ${d.join(', ')}, x の平均値が ${mean} のとき、xの値を求めなさい。`, a: `x = ${target}` };
+            } else {
+                if (type === 0) { // 四分位数
+                    let arr = Array.from({length: 7}, () => rand(5, 30)).sort((a,b)=>a-b);
+                    return { q: `次のデータの第1四分位数と第3四分位数を求めなさい。 ${arr.join(', ')}`, a: `第1: ${arr[1]}, 第3: ${arr[5]}` };
+                } else if (type === 1) { // 逆算平均
+                    let arr = Array.from({length: 4}, () => rand(10, 20));
+                    let mean = rand(12, 18);
+                    let target = mean * 5 - arr.reduce((a,b)=>a+b, 0);
+                    return { q: `5つのデータ ${arr.join(', ')}, x の平均値が${mean}のとき、xの値を求めなさい。`, a: `x = ${target}` };
+                } else { // 四分位範囲
+                    let arr = Array.from({length: 7}, () => rand(5, 30)).sort((a,b)=>a-b);
+                    return { q: `次のデータの四分位範囲を求めなさい。 ${arr.join(', ')}`, a: `${arr[5] - arr[1]}` };
+                }
             }
         };
 
         const generatePolynomials = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) a=-a;
-                let b = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) b=-b;
-                let c = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) c=-c;
-                let d = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) d=-d;
-                return { q: `(${a}x ${formatTerm(b,'y',false)}) + (${c}x ${formatTerm(d,'y',false)})`, a: `${formatTerm(a+c, 'x', true)} ${formatTerm(b+d, 'y', false)}` };
+                if (type === 0) { // a * b
+                    let a = nonZeroRand(-6, 6); let b = nonZeroRand(2, 5);
+                    return { q: `${a}x \\times ${b}y`, a: `${a*b}xy` };
+                } else if (type === 1) { // a / b
+                    let a = nonZeroRand(-6, 6) * 2; let b = choice([2, -2]);
+                    return { q: `${a}xy \\div ${wrapP(b)}x`, a: `${a/b}y` };
+                } else { // 単項式累乗
+                    let a = nonZeroRand(-4, 4);
+                    return { q: `(${a}x)^2`, a: `${a*a}x^2` };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 7) + 2; if(Math.random()>0.5) a=-a;
-                let b = Math.floor(Math.random() * 7) + 2; if(Math.random()>0.5) b=-b;
-                let c = Math.floor(Math.random() * 7) + 2; if(Math.random()>0.5) c=-c;
-                return { q: `${a*c}x^2y \\times ${b}x \\div ${c}y`, a: `${a*b}x^3` };
+                if (type === 0) { // 乗除混合
+                    let a = nonZeroRand(-4, 4); let b = nonZeroRand(2, 4); let c = nonZeroRand(2, 3);
+                    return { q: `${a*b*c}x^2y \\div ${b}x \\times ${c}y`, a: `${a*c*c}xy^2` };
+                } else if (type === 1) { // 分数割り算
+                    let a = nonZeroRand(4, 12); let b = choice([2, 3, 4]);
+                    return { q: `${a}x^2 \\div \\frac{${b}}{5}x`, a: `${(a*5)/b}x` };
+                } else { // 多項式 / 単項式
+                    let a = nonZeroRand(2, 5); let b = nonZeroRand(-5, 5); let c = nonZeroRand(2, 4);
+                    return { q: `(${a*c}x^2 ${formatTerm(b*c,'xy',false)}) \\div ${c}x`, a: `${formatTerm(a,'x',true)} ${formatTerm(b,'y',false)}` };
+                }
             } else {
-                let a = Math.floor(Math.random() * 5) + 2;
-                let b = Math.floor(Math.random() * 5) + 2; if(Math.random()>0.5) b=-b;
-                return { q: `(-${a}xy)^2 \\times ${b}x \\div ${a}x^2y`, a: `${a*b}xy` };
+                if (type === 0) { // 累乗まじり乗除
+                    let a = choice([-2, -3, 2, 3]); let b = nonZeroRand(2, 5);
+                    return { q: `(${a}x)^2 \\times ${b}y \\div ${a*2}x`, a: `${(a*a*b)/(a*2)}xy` };
+                } else if (type === 1) { // 複雑な分数
+                    let a = nonZeroRand(2, 5); let b = nonZeroRand(-5, -2);
+                    return { q: `\\frac{${a}x^2 y}{3} \\div \\frac{x}{6} \\times ${wrapP(b)}y`, a: `${a*2*b}xy^2` };
+                } else { // 文字多め
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(2, 5); let c = nonZeroRand(2, 5);
+                    return { q: `${a*b*c}a^2b^2 \\div ${wrapP(-b)}ab \\div ${c}b`, a: `${-a}a` };
+                }
             }
         };
 
         const generateSimultaneous = (diff) => {
-            let x = Math.floor(Math.random() * 15) - 7;
-            let y = Math.floor(Math.random() * 15) - 7;
+            const type = rand(0, 2);
+            let x = rand(-5, 5); let y = rand(-5, 5);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 5) + 2; if(Math.random()>0.5) a=-a;
-                let b = x - a * y;
-                let c = x + y;
-                return { q: `\\begin{cases} x = ${a}y ${formatTerm(b,'',false)} \\\\ x + y = ${c} \\end{cases}`, a: `x = ${x}, y = ${y}` };
+                if (type === 0) { // x = ay
+                    let a = nonZeroRand(2, 4); x = a * y;
+                    let c = x + y;
+                    return { q: `\\begin{cases} x = ${a}y \\\\ x + y = ${c} \\end{cases}`, a: `x=${x}, y=${y}` };
+                } else if (type === 1) { // 係数1
+                    let c1 = x + y; let c2 = x - y;
+                    return { q: `\\begin{cases} x + y = ${c1} \\\\ x - y = ${c2} \\end{cases}`, a: `x=${x}, y=${y}` };
+                } else { // 代入法 y=...
+                    let a = nonZeroRand(2, 3); let b = y - a*x;
+                    let c = x + y;
+                    return { q: `\\begin{cases} y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} \\\\ x + y = ${c} \\end{cases}`, a: `x=${x}, y=${y}` };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 5) + 2;
-                let b = Math.floor(Math.random() * 5) + 1;
-                let d = Math.floor(Math.random() * 5) + 1;
-                let c1 = a*x + b*y;
-                let c2 = a*x - d*y;
-                return { q: `\\begin{cases} ${a}x + ${b}y = ${c1} \\\\ ${a}x - ${d}y = ${c2} \\end{cases}`, a: `x = ${x}, y = ${y}` };
+                if (type === 0) { // 片方倍数
+                    let a = nonZeroRand(2, 4); let b = nonZeroRand(-3, 3); if(b===0) b=1;
+                    let c1 = x + a*y; let c2 = 2*x + b*y;
+                    return { q: `\\begin{cases} x ${formatTerm(a,'y',false)} = ${c1} \\\\ 2x ${formatTerm(b,'y',false)} = ${c2} \\end{cases}`, a: `x=${x}, y=${y}` };
+                } else if (type === 1) { // 同じ係数
+                    let a = nonZeroRand(2, 5); let b = nonZeroRand(2, 5); let c = nonZeroRand(-3, 3); if(c===0) c=-1;
+                    if(b===c) c++;
+                    let c1 = a*x + b*y; let c2 = a*x + c*y;
+                    return { q: `\\begin{cases} ${formatTerm(a,'x',true)} ${formatTerm(b,'y',false)} = ${c1} \\\\ ${formatTerm(a,'x',true)} ${formatTerm(c,'y',false)} = ${c2} \\end{cases}`, a: `x=${x}, y=${y}` };
+                } else { // 括弧あり
+                    let c1 = x + y; let a = nonZeroRand(2, 3); let c2 = a*(x-y) + y;
+                    return { q: `\\begin{cases} x + y = ${c1} \\\\ ${a}(x - y) + y = ${c2} \\end{cases}`, a: `x=${x}, y=${y}` };
+                }
             } else {
-                let a = Math.floor(Math.random() * 4) + 2;
-                let b = Math.floor(Math.random() * 4) + 2;
-                let d = Math.floor(Math.random() * 4) + 2;
-                let e = Math.floor(Math.random() * 4) + 2; if(Math.random()>0.5) e=-e;
-                if(a*e === b*d) d++;
-                let c1 = a*x + b*y;
-                let c2 = d*x + e*y;
-                return { q: `\\begin{cases} ${a}x + ${b}y = ${c1} \\\\ ${d}x ${formatTerm(e,'y',false)} = ${c2} \\end{cases}`, a: `x = ${x}, y = ${y}` };
+                if (type === 0) { // 係数バラバラ
+                    let a = rand(2, 4); let b = rand(3, 5);
+                    let c = rand(3, 5); let d = rand(2, 4);
+                    let c1 = a*x + b*y; let c2 = c*x - d*y;
+                    return { q: `\\begin{cases} ${a}x + ${b}y = ${c1} \\\\ ${c}x - ${d}y = ${c2} \\end{cases}`, a: `x=${x}, y=${y}` };
+                } else if (type === 1) { // 小数
+                    let a = rand(1, 5); let b = rand(1, 5);
+                    let c1 = (a*x + b*y)/10; let c2 = (x - y)/10;
+                    return { q: `\\begin{cases} ${a/10}x + ${b/10}y = ${c1} \\\\ 0.1x - 0.1y = ${c2} \\end{cases}`, a: `x=${x}, y=${y}` };
+                } else { // 分数
+                    let a = choice([2, 3]); let b = choice([2, 4]);
+                    while(x%a !== 0) x++; while(y%b !== 0) y++; // 整数になるように調整
+                    let c1 = (x/a) + y; let c2 = x - (y/b);
+                    return { q: `\\begin{cases} \\frac{x}{${a}} + y = ${c1} \\\\ x - \\frac{y}{${b}} = ${c2} \\end{cases}`, a: `x=${x}, y=${y}` };
+                }
             }
         };
 
         const generateLinearFunctions = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 9) + 2; if(Math.random()>0.5) a=-a;
-                let x = Math.floor(Math.random() * 7) + 1; if(Math.random()>0.5) x=-x;
-                let y = Math.floor(Math.random() * 19) - 9;
-                let b = y - a * x;
-                return { q: `変化の割合が ${a} で、点(${x}, ${y})を通る直線の式を求めなさい。`, a: `y = ${a}x ${formatTerm(b,'',false)}` };
+                if (type === 0) { // 式を求める（傾きと切片）
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    return { q: `傾きが${a}で、切片が${b}である直線の式を求めなさい。`, a: `y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}` };
+                } else if (type === 1) { // yを求める
+                    let a = nonZeroRand(-3, 3); let b = nonZeroRand(-5, 5); let x = rand(-3, 3);
+                    return { q: `1次関数 y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} で、x=${x}のときのyの値を求めなさい。`, a: `y = ${a*x+b}` };
+                } else { // xの増加量
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    return { q: `1次関数 y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} で、xが1増加するときのyの増加量を求めなさい。`, a: `${a}` };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) a=-a;
-                let x1 = Math.floor(Math.random() * 9) - 4;
-                let x2 = x1 + Math.floor(Math.random() * 4) + 1;
-                let b = Math.floor(Math.random() * 19) - 9;
-                return { q: `2点 (${x1}, ${a*x1+b}), (${x2}, ${a*x2+b}) を通る直線の式を求めなさい。`, a: `y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}` };
+                if (type === 0) { // 2点から式
+                    let a = nonZeroRand(-4, 4); let b = nonZeroRand(-5, 5);
+                    let x1 = rand(-3, 1); let x2 = x1 + rand(1, 4);
+                    return { q: `2点 (${x1}, ${a*x1+b}), (${x2}, ${a*x2+b}) を通る直線の式を求めなさい。`, a: `y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}` };
+                } else if (type === 1) { // 平行な直線
+                    let a = nonZeroRand(-4, 4); let b = nonZeroRand(-5, 5);
+                    let px = rand(-3, 3); let py = a*px + b;
+                    let dummy = rand(-5, 5); if(dummy===b) dummy++;
+                    return { q: `直線 y = ${formatTerm(a,'x',true)} ${formatTerm(dummy,'',false)} に平行で、点(${px}, ${py})を通る直線の式を求めなさい。`, a: `y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)}` };
+                } else { // 変域
+                    let a = nonZeroRand(-3, 3); let b = rand(-3, 3);
+                    let x1 = rand(-2, 0); let x2 = rand(1, 3);
+                    let y1 = a*x1+b; let y2 = a*x2+b;
+                    return { q: `1次関数 y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} について、xの変域が ${x1} \\leqq x \\leqq ${x2} のときのyの変域を求めなさい。`, a: `${Math.min(y1,y2)} \\leqq y \\leqq ${Math.max(y1,y2)}` };
+                }
             } else {
-                let a = Math.floor(Math.random() * 9) + 2; if(Math.random()>0.5) a=-a;
-                let b = Math.floor(Math.random() * 19) - 9;
-                let dummy = Math.floor(Math.random() * 9) + 1;
-                let px = Math.floor(Math.random() * 7) - 3;
-                let py = a * px + b;
-                return { q: `直線 y = ${a}x - ${dummy} に平行で、点(${px}, ${py})を通る直線の式を求めなさい。`, a: `y = ${a}x ${formatTerm(b,'',false)}` };
+                if (type === 0) { // 交点
+                    let x = rand(-3, 3); let y = rand(-3, 3);
+                    let a1 = nonZeroRand(-3, 3); let b1 = y - a1*x;
+                    let a2 = nonZeroRand(-3, 3); while(a1===a2) a2 = nonZeroRand(-3, 3);
+                    let b2 = y - a2*x;
+                    return { q: `2つの直線 y = ${formatTerm(a1,'x',true)} ${formatTerm(b1,'',false)} と y = ${formatTerm(a2,'x',true)} ${formatTerm(b2,'',false)} の交点の座標を求めなさい。`, a: `(${x}, ${y})` };
+                } else if (type === 1) { // x軸との交点
+                    let a = choice([2, -2, 3, -3, 4, -4]); let x = rand(2, 5); let b = -a*x;
+                    return { q: `直線 y = ${formatTerm(a,'x',true)} ${formatTerm(b,'',false)} がx軸と交わる点の座標を求めなさい。`, a: `(${x}, 0)` };
+                } else { // 変化の割合から
+                    let a = nonZeroRand(-4, 4); let x1 = rand(1, 3); let x2 = rand(4, 6);
+                    let incY = a * (x2 - x1);
+                    return { q: `ある1次関数は、xが${x1}から${x2}まで増加するとき、yが${incY}増加し、点(0, ${rand(-5,5)})を通る。この関数の傾き(変化の割合)を求めなさい。`, a: `${a}` };
+                }
             }
         };
 
         const generateProbabilities = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                const tType = Math.floor(Math.random() * 3);
-                if (tType === 0) {
-                    const targets = [
-                        { text: '偶数', num: 3, den: 6 }, { text: '奇数', num: 3, den: 6 },
-                        { text: '3以上', num: 4, den: 6 }, { text: '4以下', num: 4, den: 6 },
-                        { text: '素数', num: 3, den: 6 }, { text: '6の約数', num: 4, den: 6 },
-                        { text: '3の倍数', num: 2, den: 6 }, { text: '5以上', num: 2, den: 6 }
-                    ];
-                    const t = targets[Math.floor(Math.random() * targets.length)];
-                    const g = gcd(t.num, t.den);
-                    const aStr = t.den/g === 1 ? `${t.num/g}` : `\\frac{${t.num/g}}{${t.den/g}}`;
-                    return { q: `1つのさいころを投げるとき、${t.text}の目が出る確率を求めなさい。`, a: aStr };
-                } else if (tType === 1) {
-                    const max = Math.floor(Math.random() * 11) + 10; // 10 to 20
-                    const targets = ['偶数', '奇数', '3の倍数', '4の倍数', '5の倍数', '素数'];
-                    const target = targets[Math.floor(Math.random() * targets.length)];
-                    let hits = 0;
-                    for (let i = 1; i <= max; i++) {
-                        if (target === '偶数' && i % 2 === 0) hits++;
-                        if (target === '奇数' && i % 2 !== 0) hits++;
-                        if (target === '3の倍数' && i % 3 === 0) hits++;
-                        if (target === '4の倍数' && i % 4 === 0) hits++;
-                        if (target === '5の倍数' && i % 5 === 0) hits++;
-                        if (target === '素数') {
-                            let isPrime = true;
-                            if (i === 1) isPrime = false;
-                            for (let j = 2; j < i; j++) if (i % j === 0) isPrime = false;
-                            if (isPrime) hits++;
-                        }
-                    }
-                    const g = gcd(hits, max);
-                    const aStr = max/g === 1 ? `${hits/g}` : `\\frac{${hits/g}}{${max/g}}`;
-                    return { q: `1から${max}までの整数が書かれたカードが${max}枚ある。この中から1枚引くとき、${target}が出る確率を求めなさい。`, a: aStr };
-                } else {
-                    const colors = [
-                        {n: '赤', v: Math.floor(Math.random() * 5) + 2},
-                        {n: '白', v: Math.floor(Math.random() * 5) + 2},
-                        {n: '青', v: Math.floor(Math.random() * 5) + 2}
-                    ];
-                    const total = colors.reduce((sum, c) => sum + c.v, 0);
-                    const targetC = colors[Math.floor(Math.random() * colors.length)];
-                    const g = gcd(targetC.v, total);
-                    return { q: `袋の中に赤玉が${colors[0].v}個、白玉が${colors[1].v}個、青玉が${colors[2].v}個入っている。ここから玉を1個取り出すとき、${targetC.n}玉が出る確率を求めなさい。`, a: `\\frac{${targetC.v/g}}{${total/g}}` };
+                if (type === 0) { // さいころ1個
+                    let targets = [{t:'偶数',a:'\\frac{1}{2}'}, {t:'5以上',a:'\\frac{1}{3}'}, {t:'3の倍数',a:'\\frac{1}{3}'}, {t:'素数',a:'\\frac{1}{2}'}];
+                    let tg = choice(targets);
+                    return { q: `1つのさいころを投げるとき、${tg.t}の目が出る確率を求めなさい。`, a: tg.a };
+                } else if (type === 1) { // 硬貨2枚
+                    let targets = [{t:'2枚とも表',a:'\\frac{1}{4}'}, {t:'1枚が表で1枚が裏',a:'\\frac{1}{2}'}, {t:'少なくとも1枚は表',a:'\\frac{3}{4}'}];
+                    let tg = choice(targets);
+                    return { q: `2枚の硬貨を同時に投げるとき、${tg.t}になる確率を求めなさい。`, a: tg.a };
+                } else { // カード1枚
+                    let max = rand(5, 10); let hit = rand(2, 4);
+                    let g = gcd(hit, max);
+                    return { q: `1から${max}までの数字が書かれたカードが1枚ずつある。この中から1枚引くとき、指定された${hit}枚のどれかが出る確率を求めなさい。`, a: `${hit/g}/${max/g}`.replace('/1','') };
                 }
             } else if (diff === 'normal') {
-                const type = Math.floor(Math.random() * 3);
-                if (type === 0) {
-                    let t = Math.floor(Math.random() * 9) + 3; // 3 to 11
-                    let ways = 0;
-                    for(let i=1; i<=6; i++) for(let j=1; j<=6; j++) if(i+j === t) ways++;
-                    const g = gcd(ways, 36);
-                    return { q: `2つのさいころを同時に投げるとき、出る目の和が${t}になる確率を求めなさい。`, a: `\\frac{${ways/g}}{${36/g}}` };
-                } else if (type === 1) {
-                    const targets = [
-                        { text: '2枚とも表', num: 1, den: 4 },
-                        { text: '2枚とも裏', num: 1, den: 4 },
-                        { text: '1枚が表で1枚が裏', num: 2, den: 4 }
-                    ];
-                    const t = targets[Math.floor(Math.random() * targets.length)];
-                    const g = gcd(t.num, t.den);
-                    return { q: `2枚の硬貨を同時に投げるとき、${t.text}になる確率を求めなさい。`, a: `\\frac{${t.num/g}}{${t.den/g}}` };
-                } else {
-                    const total = Math.floor(Math.random() * 11) + 10; // 10 to 20
-                    const hits = Math.floor(Math.random() * 4) + 2; // 2 to 5
-                    const g = gcd(hits, total);
-                    return { q: `${total}本のくじの中に${hits}本の当たりくじが入っている。このくじを1本ひくとき、当たる確率を求めなさい。`, a: `\\frac{${hits/g}}{${total/g}}` };
+                if (type === 0) { // さいころ2個和
+                    let sum = rand(4, 10); let ways = 0;
+                    for(let i=1; i<=6; i++) for(let j=1; j<=6; j++) if(i+j===sum) ways++;
+                    let g = gcd(ways, 36);
+                    return { q: `2つのさいころを同時に投げるとき、出る目の和が${sum}になる確率を求めなさい。`, a: `\\frac{${ways/g}}{${36/g}}` };
+                } else if (type === 1) { // さいころ2個同じ目
+                    return { q: `2つのさいころを同時に投げるとき、同じ目が出る確率を求めなさい。`, a: `\\frac{1}{6}` };
+                } else { // 玉を取り出す(戻す)
+                    let r = rand(2, 4); let w = rand(2, 4); let t = r+w;
+                    let g = gcd(r, t);
+                    return { q: `赤玉${r}個、白玉${w}個が入った袋がある。1個取り出して色を確認し、袋に戻してからもう1個取り出す。2回とも赤玉が出る確率を求めなさい。`, a: `\\frac{${(r/g)*(r/g)}}{${(t/g)*(t/g)}}` };
                 }
             } else {
-                const type = Math.floor(Math.random() * 2);
-                if (type === 0) {
-                    const targets = [
-                        { text: '3枚とも表', num: 1, den: 8 },
-                        { text: '3枚とも裏', num: 1, den: 8 },
-                        { text: '2枚が表で1枚が裏', num: 3, den: 8 },
-                        { text: '少なくとも1枚は表', num: 7, den: 8 }
-                    ];
-                    const t = targets[Math.floor(Math.random() * targets.length)];
-                    const g = gcd(t.num, t.den);
-                    return { q: `3枚の硬貨を同時に投げるとき、${t.text}になる確率を求めなさい。`, a: `\\frac{${t.num/g}}{${t.den/g}}` };
-                } else {
-                    const red = Math.floor(Math.random() * 3) + 2; // 2-4
-                    const white = Math.floor(Math.random() * 3) + 2; // 2-4
-                    const total = red + white;
-                    const totalWays = (total * (total - 1)) / 2;
-                    const redWays = (red * (red - 1)) / 2;
-                    const diffWays = red * white;
-                    const isRed = Math.random() > 0.5;
-                    const ways = isRed ? redWays : diffWays;
-                    const text = isRed ? '2個とも赤玉' : '赤玉と白玉が1個ずつ';
-                    const g = gcd(ways, totalWays);
-                    return { q: `赤玉${red}個と白玉${white}個が入った袋から、同時に2個の玉を取り出すとき、${text}になる確率を求めなさい。`, a: `\\frac{${ways/g}}{${totalWays/g}}` };
+                if (type === 0) { // さいころ2個積
+                    let targets = [{t:'奇数', ways:9}, {t:'偶数', ways:27}, {t:'12の約数', ways:12}];
+                    let tg = choice(targets); let g = gcd(tg.ways, 36);
+                    return { q: `2つのさいころを同時に投げるとき、出る目の積が${tg.t}になる確率を求めなさい。`, a: `\\frac{${tg.ways/g}}{${36/g}}` };
+                } else if (type === 1) { // 硬貨3枚
+                    let targets = [{t:'3枚とも表', ways:1}, {t:'2枚が表で1枚が裏', ways:3}, {t:'少なくとも1枚は表', ways:7}];
+                    let tg = choice(targets);
+                    return { q: `3枚の硬貨を同時に投げるとき、${tg.t}になる確率を求めなさい。`, a: `\\frac{${tg.ways}}{8}` };
+                } else { // 玉を取り出す(同時に)
+                    let r = rand(2, 4); let w = rand(2, 4); let total = r + w;
+                    let totalWays = total * (total - 1) / 2;
+                    let ways = r * w; // 赤1白1
+                    let g = gcd(ways, totalWays);
+                    return { q: `赤玉${r}個、白玉${w}個が入った袋から、同時に2個の玉を取り出すとき、赤玉と白玉が1個ずつ出る確率を求めなさい。`, a: `\\frac{${ways/g}}{${totalWays/g}}` };
                 }
             }
         };
 
         const generateExpansions = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=2;
-                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=3;
-                return { q: `(x ${formatTerm(a,'',false)})(x ${formatTerm(b,'',false)})`, a: `x^2 ${formatTerm(a+b,'x',false)} ${formatTerm(a*b,'',false)}` };
+                if (type === 0) { // (x+a)(x+b)
+                    let a = nonZeroRand(-6, 6); let b = nonZeroRand(-6, 6);
+                    return { q: `(x ${formatTerm(a,'',false)})(x ${formatTerm(b,'',false)})`, a: `x^2 ${formatTerm(a+b,'x',false)} ${formatTerm(a*b,'',false)}` };
+                } else if (type === 1) { // (x+a)^2
+                    let a = nonZeroRand(-6, 6);
+                    return { q: `(x ${formatTerm(a,'',false)})^2`, a: `x^2 ${formatTerm(2*a,'x',false)} + ${a*a}` };
+                } else { // (x+a)(x-a)
+                    let a = rand(2, 8);
+                    return { q: `(x + ${a})(x - ${a})`, a: `x^2 - ${a*a}` };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=5;
-                if (Math.random() > 0.5) return { q: `(x ${formatTerm(a,'',false)})^2`, a: `x^2 ${formatTerm(2*a,'x',false)} + ${a*a}` };
-                return { q: `(x ${formatTerm(a,'',false)})(x ${formatTerm(-a,'',false)})`, a: `x^2 - ${a*a}` };
+                if (type === 0) { // (ax+b)(cx+d)
+                    let a = rand(2, 4); let c = rand(2, 4);
+                    let b = nonZeroRand(-5, 5); let d = nonZeroRand(-5, 5);
+                    return { q: `(${a}x ${formatTerm(b,'',false)})(${c}x ${formatTerm(d,'',false)})`, a: `${a*c}x^2 ${formatTerm(a*d+b*c,'x',false)} ${formatTerm(b*d,'',false)}` };
+                } else if (type === 1) { // (x+ay)^2
+                    let a = nonZeroRand(-5, 5); if(a===1) a=2;
+                    return { q: `(x ${formatTerm(a,'y',false)})^2`, a: `x^2 ${formatTerm(2*a,'xy',false)} + ${a*a}y^2` };
+                } else { // 展開の加減
+                    let a = nonZeroRand(1, 4); let b = nonZeroRand(1, 4);
+                    return { q: `(x + ${a})(x - ${a}) + (x - ${b})^2`, a: `2x^2 ${formatTerm(-2*b,'x',false)} ${formatTerm(-a*a + b*b,'',false)}` };
+                }
             } else {
-                let a = Math.floor(Math.random() * 5) + 2;
-                let b = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) b=-b;
-                let c = Math.floor(Math.random() * 5) + 2;
-                let d = Math.floor(Math.random() * 9) + 1; if(Math.random()>0.5) d=-d;
-                return { q: `(${a}x ${formatTerm(b,'',false)})(${c}x ${formatTerm(d,'',false)})`, a: `${a*c}x^2 ${formatTerm(a*d + b*c,'x',false)} ${formatTerm(b*d,'',false)}` };
+                if (type === 0) { // おきかえ (x+y+a)(x+y-a)
+                    let a = rand(2, 5);
+                    return { q: `(x + y + ${a})(x + y - ${a})`, a: `x^2 + 2xy + y^2 - ${a*a}` };
+                } else if (type === 1) { // おきかえ2 (x+y+a)(x+y+b)
+                    let a = nonZeroRand(-4, 4); let b = nonZeroRand(-4, 4);
+                    return { q: `(a - b ${formatTerm(a,'',false)})(a - b ${formatTerm(b,'',false)})`, a: `a^2 - 2ab + b^2 ${formatTerm(a+b,'a',false)} ${formatTerm(-(a+b),'b',false)} ${formatTerm(a*b,'',false)}` };
+                } else { // 工夫して計算
+                    let a = rand(1, 5);
+                    return { q: `(x - ${a})(x + ${a})(x^2 + ${a*a})`, a: `x^4 - ${a*a*a*a}` };
+                }
             }
         };
 
         const generateFactorizations = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 7) + 2;
-                let b = Math.floor(Math.random() * 9) + 2;
-                return { q: `${a}x^2 + ${a*b}x`, a: `${a}x(x + ${b})` };
+                if (type === 0) { // 共通因数
+                    let a = rand(2, 6); let b = rand(2, 6);
+                    return { q: `${a}x^2 + ${a*b}x`, a: `${a}x(x + ${b})` };
+                } else if (type === 1) { // x^2+(a+b)x+ab
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    return { q: `x^2 ${formatTerm(a+b,'x',false)} ${formatTerm(a*b,'',false)}`, a: `(x ${formatTerm(a,'',false)})(x ${formatTerm(b,'',false)})` };
+                } else { // x^2-a^2
+                    let a = rand(2, 8);
+                    return { q: `x^2 - ${a*a}`, a: `(x + ${a})(x - ${a})` };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 15) - 7; if(a===0) a=2;
-                let b = Math.floor(Math.random() * 15) - 7; if(b===0) b=-3;
-                return { q: `x^2 ${formatTerm(a+b,'x',false)} ${formatTerm(a*b,'',false)}`, a: `(x ${formatTerm(a,'',false)})(x ${formatTerm(b,'',false)})` };
+                if (type === 0) { // x^2+2ax+a^2
+                    let a = nonZeroRand(-8, 8);
+                    return { q: `x^2 ${formatTerm(2*a,'x',false)} + ${a*a}`, a: `(x ${formatTerm(a,'',false)})^2` };
+                } else if (type === 1) { // 共通因数くくってから公式
+                    let k = rand(2, 5); let a = rand(2, 5);
+                    return { q: `${k}x^2 - ${k*a*a}`, a: `${k}(x + ${a})(x - ${a})` };
+                } else { // 文字2つ
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    return { q: `x^2 ${formatTerm(a+b,'xy',false)} ${formatTerm(a*b,'y^2',false)}`, a: `(x ${formatTerm(a,'y',false)})(x ${formatTerm(b,'y',false)})` };
+                }
             } else {
-                let a = Math.floor(Math.random() * 7) + 2;
-                let b = Math.floor(Math.random() * 7) + 2;
-                if (Math.random() > 0.5) return { q: `${a}x^2 - ${a*b*b}y^2`, a: `${a}(x + ${b}y)(x - ${b}y)` };
-                return { q: `x^2 - ${a*a}y^2`, a: `(x + ${a}y)(x - ${a}y)` };
+                if (type === 0) { // ax^2 - ay^2
+                    let a = rand(2, 5); let b = rand(2, 5);
+                    return { q: `${a}x^2 - ${a*b*b}y^2`, a: `${a}(x + ${b}y)(x - ${b}y)` };
+                } else if (type === 1) { // おきかえ (x+y)^2...
+                    let a = nonZeroRand(-4, 4); let b = nonZeroRand(-4, 4);
+                    return { q: `(x+y)^2 ${formatTerm(a+b,'(x+y)',false)} ${formatTerm(a*b,'',false)}`, a: `(x+y ${formatTerm(a,'',false)})(x+y ${formatTerm(b,'',false)})` };
+                } else { // 4項
+                    return { q: `xy + x - y - 1`, a: `(x - 1)(y + 1)` };
+                }
             }
         };
 
         const generateSquareRoots = (diff) => {
-            const primes = [2, 3, 5, 7, 11, 13];
-            let p = primes[Math.floor(Math.random() * primes.length)];
+            const primes = [2, 3, 5, 7];
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 9) + 2;
-                let b = Math.floor(Math.random() * 9) + 2;
-                if (Math.random() > 0.5) b = -b;
-                return { q: `${a}\\sqrt{${p}} ${formatTerm(b,'\\sqrt{'+p+'}',false)}`, a: `${a+b}\\sqrt{${p}}` };
+                if (type === 0) { // √a * √b
+                    let p1 = choice(primes); let p2 = choice(primes.filter(x=>x!==p1));
+                    return { q: `\\sqrt{${p1}} \\times \\sqrt{${p2}}`, a: `\\sqrt{${p1*p2}}` };
+                } else if (type === 1) { // a√bにする
+                    let a = rand(2, 4); let p = choice(primes);
+                    return { q: `\\sqrt{${a*a*p}} を a\\sqrt{b} の形にしなさい。`, a: `${a}\\sqrt{${p}}` };
+                } else { // 同類項の加減
+                    let p = choice(primes); let a = rand(2, 6); let b = rand(2, 6);
+                    return { q: `${a}\\sqrt{${p}} - ${b}\\sqrt{${p}}`, a: `${formatTerm(a-b,'\\sqrt{'+p+'}',true)}` || '0' };
+                }
             } else if (diff === 'normal') {
-                let p2 = primes[Math.floor(Math.random() * primes.length)];
-                if (p === p2) p2 = primes.find(x => x !== p) || 3;
-                return { q: `\\sqrt{${p}} \\times \\sqrt{${p*p2}}`, a: `${p}\\sqrt{${p2}}` };
+                if (type === 0) { // 有理化
+                    let p = choice([2, 3, 5]); let a = p * rand(2, 4);
+                    return { q: `\\frac{${a}}{\\sqrt{${p}}}`, a: `${a/p}\\sqrt{${p}}` };
+                } else if (type === 1) { // ルートの乗法(中身が同じになる)
+                    let p = choice(primes); let a = rand(2, 4);
+                    return { q: `\\sqrt{${p}} \\times \\sqrt{${a*a*p}}`, a: `${a*p}` };
+                } else { // 分配法則
+                    let p = choice([2,3]); let p2 = choice([5,7]);
+                    return { q: `\\sqrt{${p}}(\\sqrt{${p}} + \\sqrt{${p2}})`, a: `${p} + \\sqrt{${p*p2}}` };
+                }
             } else {
-                let p2 = primes[Math.floor(Math.random() * primes.length)];
-                if (p === p2) p2 = primes.find(x => x !== p) || 3;
-                let sign = Math.random() > 0.5 ? '+' : '-';
-                return { q: `(\\sqrt{${p}} ${sign} \\sqrt{${p2}})^2`, a: `${p+p2} ${sign === '+' ? '+' : '-'} 2\\sqrt{${p*p2}}` };
+                if (type === 0) { // 乗法公式 (√a + b)^2
+                    let p = choice([2, 3, 5]); let a = nonZeroRand(-4, 4);
+                    return { q: `(\\sqrt{${p}} ${formatTerm(a,'',false)})^2`, a: `${p + a*a} ${formatTerm(2*a,'\\sqrt{'+p+'}',false)}` };
+                } else if (type === 1) { // 乗法公式 (√a + √b)(√a - √b)
+                    let p1 = choice([3, 5, 7]); let p2 = choice([2, 3]); while(p1===p2) p2++;
+                    return { q: `(\\sqrt{${p1}} + \\sqrt{${p2}})(\\sqrt{${p1}} - \\sqrt{${p2}})`, a: `${p1 - p2}` };
+                } else { // 複雑な加減
+                    let p = choice([2, 3]); let a = rand(2, 4); let b = rand(2, 4);
+                    return { q: `\\sqrt{${a*a*p}} + \\frac{${b*p}}{\\sqrt{${p}}}`, a: `${a+b}\\sqrt{${p}}` };
+                }
             }
         };
 
         const generateQuadratic = (diff) => {
+            const type = rand(0, 2);
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=2;
-                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=-3;
-                return { q: `(x ${formatTerm(-a,'',false)})(x ${formatTerm(-b,'',false)}) = 0`, a: `x = ${Math.min(a,b)}, ${Math.max(a,b)}` };
+                if (type === 0) { // 因数分解利用 x^2+(a+b)x+ab=0
+                    let a = nonZeroRand(-5, 5); let b = nonZeroRand(-5, 5);
+                    return { q: `x^2 ${formatTerm(a+b,'x',false)} ${formatTerm(a*b,'',false)} = 0`, a: `x = ${-a}, ${-b}` };
+                } else if (type === 1) { // x^2 = a
+                    let a = rand(2, 9);
+                    return { q: `x^2 = ${a*a}`, a: `x = \\pm ${a}` };
+                } else { // (x+a)^2 = 0
+                    let a = nonZeroRand(-6, 6);
+                    return { q: `x^2 ${formatTerm(2*a,'x',false)} + ${a*a} = 0`, a: `x = ${-a}` };
+                }
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 15) - 7; if (a===0) a=4;
-                let b = Math.floor(Math.random() * 15) - 7; if (b===0) b=-2;
-                return { q: `x^2 ${formatTerm(-(a+b),'x',false)} ${formatTerm(a*b,'',false)} = 0`, a: `x = ${Math.min(a,b)}, ${Math.max(a,b)}` };
+                if (type === 0) { // (x+a)^2 = b
+                    let a = nonZeroRand(-5, 5); let b = choice([2, 3, 5, 7]);
+                    return { q: `(x ${formatTerm(a,'',false)})^2 = ${b}`, a: `x = ${-a} \\pm \\sqrt{${b}}` };
+                } else if (type === 1) { // 解の公式 (単純)
+                    let b = choice([3, 5, 7]); let c = choice([-1, -2, -3]);
+                    let d = b*b - 4*c;
+                    return { q: `x^2 + ${b}x ${formatTerm(c,'',false)} = 0`, a: `x = \\frac{-${b} \\pm \\sqrt{${d}}}{2}` };
+                } else { // 共通因数でくくる 2x^2 - 8x = 0
+                    let a = rand(2, 4); let b = nonZeroRand(-5, 5);
+                    return { q: `${a}x^2 ${formatTerm(a*b,'x',false)} = 0`, a: `x = 0, ${-b}` };
+                }
             } else {
-                let b = Math.floor(Math.random() * 6) * 2 + 2; // 2, 4, 6, 8, 10, 12
-                if(Math.random() > 0.5) b = -b;
-                let c = Math.floor(Math.random() * 9) + 1;
-                let inside = (b/2)*(b/2) + c; 
-                return { q: `x^2 ${formatTerm(b,'x',false)} - ${c} = 0`, a: `x = ${-b/2} \\pm \\sqrt{${inside}}` };
+                if (type === 0) { // 展開して整理 (x+a)(x+b) = c
+                    let a = rand(1, 3); let b = rand(-3, -1);
+                    let c = a * b - 12; // x^2+(a+b)x+12=0 => 解を求める
+                    // 簡単のため、解の公式が綺麗になるように調整
+                    return { q: `(x + 2)(x - 4) = 7`, a: `x = 1 \\pm \\sqrt{16}` }; // 調整版固定
+                } else if (type === 1) { // 解の公式 (約分あり)
+                    let b = choice([2, 4, 6]); let c = choice([-1, -3, -5]);
+                    let d = (b/2)*(b/2) - c;
+                    return { q: `x^2 + ${b}x ${formatTerm(c,'',false)} = 0`, a: `x = ${-b/2} \\pm \\sqrt{${d}}` };
+                } else { // 係数決定
+                    let ans = rand(2, 5); let a = rand(-5, 5);
+                    let c = -(ans*ans + a*ans);
+                    return { q: `2次方程式 x^2 ${formatTerm(a,'x',false)} + c = 0 の1つの解が x=${ans} であるとき、cの値を求めなさい。`, a: `c = ${c}` };
+                }
             }
         };
 
@@ -532,7 +695,7 @@
             }
 
             // 記号置換
-            let processedStr = str.replace(/\\times/g, '×').replace(/\\div/g, '÷').replace(/\\pm/g, '±');
+            let processedStr = str.replace(/\\times/g, '×').replace(/\\div/g, '÷').replace(/\\pm/g, '±').replace(/\\leqq/g, '≦');
 
             // 分数とルートのパース
             const tokens = processedStr.split(/(\\frac{[^{}]+}{[^{}]+}|\\sqrt{[^{}]+})/g);
@@ -568,16 +731,16 @@
         };
 
         const renderSimpleMath = (str) => {
-            const parts = str.split('^2');
+            const parts = str.split(/\^([0-9]+|[a-zA-Z])/);
             if (parts.length === 1) return str;
             return (
                 <React.Fragment>
-                    {parts.map((part, i) => (
-                        <React.Fragment key={i}>
-                            {part}
-                            {i < parts.length - 1 && <sup className="text-[0.7em] align-super font-serif">2</sup>}
-                        </React.Fragment>
-                    ))}
+                    {parts.map((part, i) => {
+                        if (i % 2 === 1) {
+                            return <sup key={i} className="text-[0.7em] align-super font-serif">{part}</sup>;
+                        }
+                        return <React.Fragment key={i}>{part}</React.Fragment>;
+                    })}
                 </React.Fragment>
             );
         };
@@ -648,13 +811,12 @@
 
                 const newProblems = [];
                 let attempts = 0;
-                const maxAttempts = count * 50; // 強力な無限ループ防止用
+                const maxAttempts = count * 50;
 
                 while (newProblems.length < count && attempts < maxAttempts) {
                     const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
                     const newProblem = generators[randomUnitId](difficulty);
                     
-                    // 重複チェック: まだ同じ問題文が追加されていなければ追加する
                     const isDuplicate = newProblems.some(p => p.q === newProblem.q);
                     if (!isDuplicate) {
                         newProblems.push(newProblem);
@@ -662,8 +824,6 @@
                     attempts++;
                 }
 
-                // 万が一バリエーションが枯渇し問題数が不足する場合は、重複を許可して補充
-                // 重複問題には見えないスペースを付与してReactのkey重複や同一文字列チェックをバイパスする
                 while (newProblems.length < count) {
                     const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
                     let newProblem = generators[randomUnitId](difficulty);
@@ -675,7 +835,6 @@
                 setShowAnswers(false);
             };
 
-            // 初期化および設定変更時に問題を自動生成
             useEffect(() => {
                 if (selectedUnits.length > 0) {
                     generate();
