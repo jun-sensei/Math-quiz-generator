@@ -257,7 +257,7 @@
                     let a = nonZeroRand(2, 5); let x1 = rand(2, 4); let x2 = rand(5, 8);
                     return { q: `yはxに比例し、x=${x1}のときy=${a*x1}である。x=${x2}のときのyの値を求めなさい。`, a: `y = ${a*x2}` };
                 } else {
-                    let p = rand(12, 36); let x1 = rand(2, 4); let y1 = p/x1; let x2 = choice([2,3,4,6]);
+                    let p = choice([12, 24, 36]); let x1 = rand(2, 4); let y1 = p/x1; let x2 = choice([2,3,4,6]);
                     while(p % x2 !== 0 || x1 === x2) x2 = choice([2,3,4,6]);
                     return { q: `yはxに反比例し、x=${x1}のときy=${y1}である。x=${x2}のときのyの値を求めなさい。`, a: `y = ${p/x2}` };
                 }
@@ -824,11 +824,13 @@
                     attempts++;
                 }
 
-                while (newProblems.length < count) {
+                let fallbackAttempts = 0;
+                while (newProblems.length < count && fallbackAttempts < 100) {
                     const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
                     let newProblem = generators[randomUnitId](difficulty);
                     let suffix = " ".repeat(newProblems.length); 
                     newProblems.push({ q: newProblem.q + suffix, a: newProblem.a });
+                    fallbackAttempts++;
                 }
 
                 setProblems(newProblems);
